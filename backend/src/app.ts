@@ -1,14 +1,12 @@
-import express, {
-  type NextFunction,
-  type Request,
-  type Response
-} from "express";
+import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 
 import { env } from "./config/env.js";
 import { checkDatabaseConnection } from "./config/database.js";
+import { authRouter } from "./routes/auth.routes.js";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 
 export const app = express();
 
@@ -27,6 +25,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 
+// Unversioned: infrastructure/ops endpoint, not part of the business API.
 app.get("/api/health", async (_request, response, next) => {
   try {
     const database = await checkDatabaseConnection();
@@ -41,25 +40,7 @@ app.get("/api/health", async (_request, response, next) => {
   }
 });
 
-app.use((_request, response) => {
-  response.status(404).json({
-    success: false,
-    message: "Endpoint not found."
-  });
-});
+app.use("/api/v1/auth", authRouter);
 
-app.use(
-  (
-    error: unknown,
-    _request: Request,
-    response: Response,
-    _next: NextFunction
-  ) => {
-    console.error(error);
-
-    response.status(500).json({
-      success: false,
-      message: "An internal server error occurred."
-    });
-  }
-);
+app.use(notFoundHandler);
+app.use(errorHandler);

@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
+    "seed": "tsx src/scripts/seed.ts",
     "test": "echo \"Tests have not been configured yet.\""
   },
   "keywords": [
@@ -27,6 +28,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
     "mysql2": "^3.23.1",

@@ -1,83 +1,56 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { useAuth } from "./auth/AuthContext";
+import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { LoginPage } from "./pages/LoginPage";
 
-interface HealthResponse {
-  success: boolean;
-  message: string;
-  database?: {
-    databaseName: string;
-    databaseVersion: string;
-    utcTime: string;
-  };
+/**
+ * Placeholder landing page for authenticated users. This intentionally
+ * stops at "auth works" — role-specific dashboards (admin/doctor/
+ * pharmacist/patient) are a later milestone, not part of this one.
+ */
+function AuthenticatedHome() {
+  const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout(): Promise<void> {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }
+
+  return (
+    <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
+      <h1>EHR and E-Prescription System</h1>
+      <p>
+        Signed in as {user?.displayName ?? user?.email} — role: <strong>{user?.role}</strong>
+      </p>
+      <button
+        type="button"
+        onClick={() => void handleLogout()}
+        disabled={isLoggingOut}
+        style={{ padding: "0.5rem 1rem" }}
+      >
+        {isLoggingOut ? "Logging out…" : "Log out"}
+      </button>
+    </main>
+  );
 }
 
 function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadHealth(): Promise<void> {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL;
-
-        console.log("API URL:", apiUrl);
-
-        const response = await fetch(`${apiUrl}/health`, {
-          credentials: "include"
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const result = (await response.json()) as HealthResponse;
-
-        setHealth(result);
-      } catch (requestError) {
-        console.error(requestError);
-
-        setError(
-          requestError instanceof Error
-            ? requestError.message
-            : "Unknown API error"
-        );
-      }
-    }
-
-    void loadHealth();
-  }, []);
-
   return (
-    <main
-      style={{
-        padding: "2rem",
-        fontFamily: "Arial, sans-serif",
-        textAlign: "center"
-      }}
-    >
-      <h1>EHR and E-Prescription System</h1>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
 
-      {error && <p>Backend error: {error}</p>}
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<AuthenticatedHome />} />
+      </Route>
 
-      {!error && !health && <p>Checking backend...</p>}
-
-      {health && (
-        <section>
-          <p>{health.message}</p>
-
-          <p>
-            Database:
-            {" "}
-            {health.database?.databaseName}
-          </p>
-
-          <p>
-            MySQL:
-            {" "}
-            {health.database?.databaseVersion}
-          </p>
-        </section>
-      )}
-    </main>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
