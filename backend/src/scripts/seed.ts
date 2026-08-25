@@ -1,20 +1,13 @@
 /**
- * Idempotent seed script: creates one synthetic user per role
- * (ADMIN, DOCTOR, PHARMACIST, PATIENT) if it does not already exist.
+ * Idempotent seed script that creates the initial administrator
+ * account when it does not already exist.
  *
- * - Passwords are never hard-coded and never written into SQL.
- *   Each password is either read from an environment variable
- *   (SEED_<ROLE>_PASSWORD) or generated randomly at runtime, then
- *   hashed with bcryptjs before being inserted.
- * - Re-running this script is safe: existing users (matched by
- *   email) are left untouched, not duplicated or overwritten.
- * - Only a `users` row is created here — this does not create
- *   `practitioners`/`patients` profile rows, since those belong to
- *   later thesis modules.
+ * Doctor and pharmacist accounts must be created through the
+ * admin staff endpoint so that their practitioner and organization
+ * records are created in the same transaction.
  *
- * Usage:
- *   npm run seed
- *   SEED_ADMIN_PASSWORD=... SEED_DOCTOR_PASSWORD=... npm run seed
+ * Patient accounts must be created through public patient
+ * registration so that the patient profile is also created.
  */
 import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
@@ -36,24 +29,6 @@ const SEED_USERS: SeedUserDefinition[] = [
     email: "admin@ehr.local",
     displayName: "System Administrator",
     passwordEnvVar: "SEED_ADMIN_PASSWORD"
-  },
-  {
-    roleCode: "DOCTOR",
-    email: "doctor@ehr.local",
-    displayName: "Dr. Jane Doe",
-    passwordEnvVar: "SEED_DOCTOR_PASSWORD"
-  },
-  {
-    roleCode: "PHARMACIST",
-    email: "pharmacist@ehr.local",
-    displayName: "Alex Pharmacist",
-    passwordEnvVar: "SEED_PHARMACIST_PASSWORD"
-  },
-  {
-    roleCode: "PATIENT",
-    email: "patient@ehr.local",
-    displayName: "Sam Patient",
-    passwordEnvVar: "SEED_PATIENT_PASSWORD"
   }
 ];
 
@@ -118,9 +93,8 @@ async function seed(): Promise<void> {
   }
 
   console.log(
-    "\nTip: set SEED_ADMIN_PASSWORD / SEED_DOCTOR_PASSWORD / SEED_PHARMACIST_PASSWORD / SEED_PATIENT_PASSWORD " +
-      "before running to choose your own passwords instead of random ones."
-  );
+  "\nTip: set SEED_ADMIN_PASSWORD before running the seed script."
+);
 }
 
 seed()

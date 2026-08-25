@@ -1,6 +1,6 @@
 import type { CookieOptions, NextFunction, Request, Response } from "express";
 import { env } from "../config/env.js";
-import { loginSchema } from "../validators/auth.validator.js";
+import { changePasswordSchema, loginSchema, registerSchema } from "../validators/auth.validator.js";
 import { parseWithSchema } from "../utils/validate.js";
 import * as authService from "../services/auth.service.js";
 
@@ -33,6 +33,39 @@ function getRequestMeta(request: Request): { ipAddress: string | null; userAgent
     ipAddress: request.ip ?? null,
     userAgent: request.get("user-agent") ?? null
   };
+}
+
+export async function register(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const input =
+      parseWithSchema(
+        registerSchema,
+        request.body
+      );
+
+    const result =
+      await authService.registerPatient(
+        input,
+        getRequestMeta(request)
+      );
+
+    response
+      .status(201)
+      .json({
+        success: true,
+
+        data: {
+          user:
+            result.user
+        }
+      });
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function login(request: Request, response: Response, next: NextFunction): Promise<void> {
@@ -76,7 +109,7 @@ export async function refresh(request: Request, response: Response, next: NextFu
 export async function logout(request: Request, response: Response, next: NextFunction): Promise<void> {
   try {
     const rawRefreshToken = request.cookies[env.REFRESH_COOKIE_NAME] as string | undefined;
-    await authService.logout(rawRefreshToken);
+    await authService.logout(rawRefreshToken, getRequestMeta(request));
 
     clearRefreshCookie(response);
 
@@ -107,4 +140,23 @@ export async function me(request: Request, response: Response, next: NextFunctio
   } catch (error) {
     next(error);
   }
+}
+
+export async function logoutAll(request: Request, response: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!request.user) throw new Error("authenticate middleware is required.");
+    await authService.logoutAll(request.user.id, getRequestMeta(request));
+    clearRefreshCookie(response);
+    response.status(200).json({ success: true, data: null });
+  } catch (error) { clearRefreshCookie(response); next(error); }
+}
+
+export async function changePassword(request: Request, response: Response, next: NextFunction): Promise<void> {
+  try {
+    if (!request.user) throw new Error("authenticate middleware is required.");
+    const input = parseWithSchema(changePasswordSchema, request.body);
+    await authService.changePassword(request.user.id, input, getRequestMeta(request));
+    clearRefreshCookie(response);
+    response.status(200).json({ success: true, data: { message: "Password changed. Please sign in again." } });
+  } catch (error) { next(error); }
 }

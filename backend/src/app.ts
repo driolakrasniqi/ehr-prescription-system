@@ -7,6 +7,7 @@ import { env } from "./config/env.js";
 import { checkDatabaseConnection } from "./config/database.js";
 import { authRouter } from "./routes/auth.routes.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
+import {  adminUserRouter} from "./routes/adminUser.routes.js";
 
 export const app = express();
 
@@ -41,6 +42,7 @@ app.get("/api/health", async (_request, response, next) => {
 });
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/admin",  adminUserRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -9,6 +9,7 @@ export type UserStatus = "PENDING" | "ACTIVE" | "LOCKED" | "DISABLED";
 export interface AccessTokenPayload {
   sub: string;
   role: UserRole;
+  version: number;
   type: "access";
 }
 
@@ -20,6 +21,8 @@ export interface AuthenticatedUser {
   id: number;
   role: UserRole;
 }
+
+export type ManageableUserStatus = "PENDING" | "ACTIVE" | "DISABLED";
 
 /**
  * Safe, public-facing representation of a user. Never includes

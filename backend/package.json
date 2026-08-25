@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "seed": "tsx src/scripts/seed.ts",
-    "test": "echo \"Tests have not been configured yet.\""
+    "test": "node --import tsx --test tests/*.test.ts"
   },
   "keywords": [
     "ehr",

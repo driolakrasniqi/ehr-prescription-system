@@ -14,11 +14,11 @@
 --   * All timestamps are stored in UTC
 -- ============================================================================
 
-CREATE DATABASE IF NOT EXISTS ehr_eprescription
+CREATE DATABASE IF NOT EXISTS ehr_eprescription_test
   CHARACTER SET utf8mb4
   COLLATE utf8mb4_0900_ai_ci;
 
-USE ehr_eprescription;
+USE ehr_eprescription_test;
 SET time_zone = '+00:00';
 
 -- --------------------------------------------------------------------------

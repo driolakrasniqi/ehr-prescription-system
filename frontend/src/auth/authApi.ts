@@ -30,6 +30,41 @@ interface MeResponseData {
   user: AuthenticatedUser;
 }
 
+export interface RegisterPatientInput {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+
+  sex:
+    | "FEMALE"
+    | "MALE";
+
+  phone?: string;
+
+  email: string;
+
+  password: string;
+  confirmPassword: string;
+}
+
+interface RegisterResponseData {
+  user: AuthenticatedUser;
+}
+
+export async function registerRequest(
+  input: RegisterPatientInput
+): Promise<RegisterResponseData> {
+  const response =
+    await apiClient.post<
+      ApiSuccess<RegisterResponseData>
+    >(
+      "/auth/register",
+      input
+    );
+
+  return response.data.data;
+}
+
 export async function loginRequest(credentials: LoginCredentials): Promise<LoginResponseData> {
   const response = await apiClient.post<ApiSuccess<LoginResponseData>>("/auth/login", credentials);
   return response.data.data;

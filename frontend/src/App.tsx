@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./auth/AuthContext";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
+import { SignUpPage} from "./pages/SignUpPage";
 import { LoginPage } from "./pages/LoginPage";
 
 /**
@@ -43,7 +44,8 @@ function AuthenticatedHome() {
 function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login"  element={<LoginPage />}/>
+      <Route  path="/signup" element={<SignUpPage />}/>
 
       <Route element={<ProtectedRoute />}>
         <Route path="/" element={<AuthenticatedHome />} />
