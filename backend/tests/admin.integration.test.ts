@@ -13,7 +13,8 @@ let baseUrl: string;
 let databasePool: typeof import("../src/config/database.js").databasePool;
 let adminToken: string;
 let adminId: number;
-let organizationId: number;
+let clinicOrganizationId: number;
+let pharmacyOrganizationId: number;
 
 const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const adminEmail = `admin.${runId}@example.com`;
@@ -96,9 +97,6 @@ async function createStaff(
 
         role,
 
-        practitionerNumber:
-          `PR-${uniqueCode}`,
-
         licenseNumber:
           `LIC-${uniqueCode}`,
 
@@ -110,7 +108,11 @@ async function createStaff(
         phone:
           "+38344111222",
 
-        organizationId,
+        organizationId:
+  role === "DOCTOR"
+    ? clinicOrganizationId
+    : pharmacyOrganizationId,
+    
 
         positionTitle:
           role
@@ -140,13 +142,57 @@ before(async () => {
   );
   adminId = Number(adminResult.insertId);
 
-  const [organizationResult] = await databasePool.query<any>(
+  const [clinicResult] =
+  await databasePool.query<any>(
     `INSERT INTO organizations
-       (organization_code, organization_type, name, license_number, status)
-     VALUES (?, 'CLINIC', 'Integration Clinic', ?, 'ACTIVE')`,
-    [`ORG-${runId}`, `ORG-LIC-${runId}`]
+       (
+         organization_code,
+         organization_type,
+         name,
+         license_number,
+         status
+       )
+     VALUES (
+       ?,
+       'CLINIC',
+       'Integration Clinic',
+       ?,
+       'ACTIVE'
+     )`,
+    [
+      `CLINIC-${runId}`,
+      `CLINIC-LIC-${runId}`
+    ]
   );
-  organizationId = Number(organizationResult.insertId);
+
+clinicOrganizationId =
+  Number(clinicResult.insertId);
+
+const [pharmacyResult] =
+  await databasePool.query<any>(
+    `INSERT INTO organizations
+       (
+         organization_code,
+         organization_type,
+         name,
+         license_number,
+         status
+       )
+     VALUES (
+       ?,
+       'PHARMACY',
+       'Integration Pharmacy',
+       ?,
+       'ACTIVE'
+     )`,
+    [
+      `PHARMACY-${runId}`,
+      `PHARMACY-LIC-${runId}`
+    ]
+  );
+
+pharmacyOrganizationId =
+  Number(pharmacyResult.insertId);
 
   server = appModule.app.listen(0, "127.0.0.1");
   await new Promise<void>((resolve, reject) => {
@@ -177,6 +223,14 @@ before(async () => {
 });
 
 after(async () => {
+  if (!databasePool) {
+    if (server?.listening) {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+    }
+    return;
+  }
   const [rows] = await databasePool.query<any[]>(
     "SELECT id FROM users WHERE email LIKE ?",
     [`%.${runId}@example.com`]
@@ -204,11 +258,22 @@ after(async () => {
     await databasePool.query(`DELETE FROM users WHERE id IN (${placeholders})`, ids);
   }
 
-  await databasePool.query("DELETE FROM organizations WHERE id = ?", [organizationId]);
+  await databasePool.query(
+  `
+    DELETE FROM organizations
+    WHERE id IN (?, ?)
+  `,
+  [
+    clinicOrganizationId,
+    pharmacyOrganizationId
+  ]
+);
   await databasePool.end();
-  await new Promise<void>((resolve, reject) =>
-    server.close((error) => (error ? reject(error) : resolve()))
-  );
+  if (server?.listening) {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+  }
 });
 
 test("unauthenticated admin request returns 401", async () => {
@@ -255,8 +320,20 @@ test("administrator creates complete doctor and pharmacist staff accounts", asyn
     [doctor.body.data.userId, pharmacist.body.data.userId]
   );
   assert.equal(rows.length, 2);
-  assert.deepEqual(new Set(rows.map((row) => row.role_code)), new Set(["DOCTOR", "PHARMACIST"]));
-  assert.ok(rows.every((row) => Number(row.organization_id) === organizationId));
+  assert.deepEqual(
+    new Set(rows.map((row) => row.role_code)),
+    new Set(["DOCTOR", "PHARMACIST"])
+  );
+
+  const doctorRow = rows.find((row) => row.role_code === "DOCTOR");
+  const pharmacistRow = rows.find((row) => row.role_code === "PHARMACIST");
+
+  assert.ok(doctorRow);
+  assert.ok(pharmacistRow);
+  assert.equal(Number(doctorRow.organization_id), clinicOrganizationId);
+  assert.equal(doctorRow.professional_role, "DOCTOR");
+  assert.equal(Number(pharmacistRow.organization_id), pharmacyOrganizationId);
+  assert.equal(pharmacistRow.professional_role, "PHARMACIST");
 });
 
 test("duplicate staff identity is rejected without creating another user", async () => {
@@ -285,7 +362,6 @@ test("staff transaction rolls back when the organization is invalid", async () =
       firstName: "Rollback",
       lastName: "Staff",
       role: "DOCTOR",
-      practitionerNumber: `ROLLBACK-PR-${runId}`,
       licenseNumber: `ROLLBACK-LIC-${runId}`,
       organizationId: 4294967295
     }
@@ -344,9 +420,8 @@ test("staff creation rejects ADMIN and PATIENT roles", async () => {
         firstName: "Invalid",
         lastName: "Role",
         role,
-        practitionerNumber: `${role}-PR-${runId}`,
         licenseNumber: `${role}-LIC-${runId}`,
-        organizationId
+        organizationId: clinicOrganizationId
       }
     });
     assert.equal(result.status, 400);
@@ -372,7 +447,7 @@ test("administrator cannot demote or deactivate themselves", async () => {
   assert.equal(disable.body.error.code, "SELF_STATUS_CHANGE_NOT_ALLOWED");
 });
 
-test("role cannot be assigned without its required profile", async () => {
+test("patient account cannot be converted into a professional account", async () => {
   const [rows] = await databasePool.query<any[]>(
     "SELECT id FROM users WHERE email = ?",
     [patientEmail]
@@ -383,11 +458,11 @@ test("role cannot be assigned without its required profile", async () => {
     body: { role: "DOCTOR" }
   });
   assert.equal(result.status, 409);
-  assert.equal(result.body.error.code, "PROFILE_REQUIRED");
+  assert.equal(result.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
 });
 
 test(
-  "role change revokes the target user's refresh sessions",
+  "professional account cannot be converted directly into an administrator",
   async () => {
     const created =
       await createStaff(
@@ -433,11 +508,8 @@ test(
         }
       );
 
-    assert.equal(
-      roleChanged.status,
-      200,
-      JSON.stringify(roleChanged.body)
-    );
+    assert.equal(roleChanged.status, 409, JSON.stringify(roleChanged.body));
+    assert.equal(roleChanged.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
 
     const refreshResult =
       await request(
@@ -448,20 +520,12 @@ test(
         }
       );
 
-    assert.equal(
-      refreshResult.status,
-      401
-    );
-
-    assert.equal(
-      refreshResult.body.error.code,
-      "UNAUTHENTICATED"
-    );
+    assert.equal(refreshResult.status, 200, JSON.stringify(refreshResult.body));
   }
 );
 
 test(
-  "role change invalidates the target user's access token",
+  "patient account cannot be promoted directly to administrator",
   async () => {
     const targetEmail =
       `role-access.${runId}@example.com`;
@@ -518,11 +582,8 @@ test(
         }
       );
 
-    assert.equal(
-      roleChanged.status,
-      200,
-      JSON.stringify(roleChanged.body)
-    );
+    assert.equal(roleChanged.status, 409, JSON.stringify(roleChanged.body));
+    assert.equal(roleChanged.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
 
     const oldSession =
       await request(
@@ -532,15 +593,7 @@ test(
         }
       );
 
-    assert.equal(
-      oldSession.status,
-      401
-    );
-
-    assert.equal(
-      oldSession.body.error.code,
-      "SESSION_INVALIDATED"
-    );
+    assert.equal(oldSession.status, 200, JSON.stringify(oldSession.body));
   }
 );
 
@@ -620,4 +673,100 @@ test("unlock succeeds only for a LOCKED account", async () => {
     (await request(`/api/v1/admin/users/${userId}/unlock`, { method: "POST", token: adminToken })).status,
     409
   );
+});
+
+test("administrator creates a complete patient account", async () => {
+  const email = `admin-created-patient.${runId}@example.com`;
+  const result = await request("/api/v1/admin/patients", {
+    method: "POST",
+    token: adminToken,
+    body: {
+      email,
+      password: "PatientCreated123!",
+      firstName: "Admin",
+      lastName: "Created",
+      dateOfBirth: "1991-04-12",
+      sex: "FEMALE",
+      bloodType: "A+",
+      maritalStatus: "SINGLE",
+      smokingStatus: "NEVER",
+      phone: "+38344123456",
+      city: "Prishtina",
+      countryCode: "XK"
+    }
+  });
+
+  assert.equal(result.status, 201, JSON.stringify(result.body));
+
+  const [rows] = await databasePool.query<any[]>(
+    `SELECT u.email, r.code AS role_code, p.patient_number, p.phone
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+       JOIN patients p ON p.user_id = u.id
+      WHERE u.id = ?`,
+    [result.body.data.userId]
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].email, email);
+  assert.equal(rows[0].role_code, "PATIENT");
+  assert.match(rows[0].patient_number, /^PAT-/);
+  assert.equal(rows[0].phone, "+38344123456");
+});
+
+test("suspending a clinic preserves its doctor and ordinary edits preserve assignment history", async () => {
+  const marker = "suspended-clinic-edit";
+  const created = await createStaff("DOCTOR", marker);
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const userId = Number(created.body.data.userId);
+
+  const [beforeRows] = await databasePool.query<any[]>(
+    `SELECT COUNT(*) AS total
+       FROM practitioner_organizations po
+       JOIN practitioners p ON p.id = po.practitioner_id
+      WHERE p.user_id = ?`,
+    [userId]
+  );
+
+  const suspended = await request(
+    `/api/v1/admin/organizations/${clinicOrganizationId}/status`,
+    { method: "PATCH", token: adminToken, body: { status: "SUSPENDED" } }
+  );
+  assert.equal(suspended.status, 200, JSON.stringify(suspended.body));
+
+  const updated = await request(`/api/v1/admin/users/${userId}/profile`, {
+    method: "PATCH",
+    token: adminToken,
+    body: {
+      profileType: "PRACTITIONER",
+      role: "DOCTOR",
+      email: `${marker}.${runId}@example.com`,
+      firstName: "Doctor",
+      lastName: "Integration",
+      licenseNumber: `UPDATED-${runId.slice(-12)}`,
+      specialty: "General Medicine",
+      phone: "+38344999888",
+      organizationId: clinicOrganizationId,
+      positionTitle: "Doctor"
+    }
+  });
+  assert.equal(updated.status, 200, JSON.stringify(updated.body));
+
+  const [afterRows] = await databasePool.query<any[]>(
+    `SELECT u.status AS user_status, p.is_active, COUNT(po.id) AS total
+       FROM users u
+       JOIN practitioners p ON p.user_id = u.id
+       JOIN practitioner_organizations po ON po.practitioner_id = p.id
+      WHERE u.id = ?
+      GROUP BY u.id, p.id`,
+    [userId]
+  );
+  assert.equal(afterRows[0].user_status, "ACTIVE");
+  assert.equal(Number(afterRows[0].is_active), 1);
+  assert.equal(Number(afterRows[0].total), Number(beforeRows[0].total));
+
+  const reactivated = await request(
+    `/api/v1/admin/organizations/${clinicOrganizationId}/status`,
+    { method: "PATCH", token: adminToken, body: { status: "ACTIVE" } }
+  );
+  assert.equal(reactivated.status, 200, JSON.stringify(reactivated.body));
 });

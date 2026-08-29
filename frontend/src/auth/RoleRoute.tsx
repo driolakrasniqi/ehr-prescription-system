@@ -10,8 +10,7 @@ interface RoleRouteProps {
  * Nest inside <ProtectedRoute> — assumes authentication has already
  * been verified there. Only checks role, and (like ProtectedRoute)
  * is a UX convenience: the backend's `requireRole` middleware is the
- * authoritative check. Not used anywhere yet; provided so
- * role-specific routes can adopt it later without new plumbing.
+ * authoritative check. Used for administrator and patient workspaces.
  *
  * Usage:
  *   <Route element={<ProtectedRoute />}>

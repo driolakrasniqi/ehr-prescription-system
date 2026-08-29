@@ -206,10 +206,10 @@ export function SignUpPage() {
     }
 
     if (
-      form.password.length < 8
+      form.password.length < 12
     ) {
       errors.password =
-        "Password must contain at least 8 characters.";
+        "Password must contain at least 12 characters.";
     }
 
     if (

@@ -96,6 +96,14 @@ before(async () => {
 });
 
 after(async () => {
+  if (!databasePool) {
+    if (server?.listening) {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve()))
+      );
+    }
+    return;
+  }
   const [rows] = await databasePool.query<any[]>(
     "SELECT id FROM users WHERE email LIKE ?",
     [`%.${runId}@example.com`]
@@ -123,9 +131,11 @@ after(async () => {
   }
 
   await databasePool.end();
-  await new Promise<void>((resolve, reject) =>
-    server.close((error) => (error ? reject(error) : resolve()))
-  );
+  if (server?.listening) {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve()))
+    );
+  }
 });
 
 test("patient registration creates an ACTIVE PATIENT and patient profile", async () => {

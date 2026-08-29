@@ -1,7 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { changePasswordSchema, registerSchema } from "../src/validators/auth.validator.js";
-import { createStaffSchema, updateUserStatusSchema } from "../src/validators/adminUser.validator.js";
+import {
+  createPatientSchema,
+  createStaffSchema,
+  updatePatientProfileSchema,
+  updateUserStatusSchema
+} from "../src/validators/adminUser.validator.js";
 
 test("public registration accepts valid patient data", () => {
   const result = registerSchema.safeParse({ firstName: "Mia", lastName: "Test",
@@ -26,6 +31,24 @@ test("staff creation rejects ADMIN role", () => {
 
 test("admin status input rejects LOCKED", () => {
   assert.equal(updateUserStatusSchema.safeParse({ status: "LOCKED" }).success, false);
+});
+
+test("admin patient create and update reject future dates of birth", () => {
+  const futureDate = "2999-01-01";
+  const base = {
+    email: "future.patient@example.com",
+    firstName: "Future",
+    lastName: "Patient",
+    dateOfBirth: futureDate,
+    sex: "FEMALE" as const,
+    bloodType: "UNKNOWN" as const,
+    maritalStatus: "UNKNOWN" as const,
+    smokingStatus: "UNKNOWN" as const,
+    countryCode: "XK"
+  };
+
+  assert.equal(createPatientSchema.safeParse({ ...base, password: "StrongPass123!" }).success, false);
+  assert.equal(updatePatientProfileSchema.safeParse({ ...base, profileType: "PATIENT" }).success, false);
 });
 
 test(

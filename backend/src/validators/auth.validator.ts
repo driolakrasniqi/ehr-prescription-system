@@ -31,6 +31,17 @@ function isValidDateOnly(
   );
 }
 
+export const dateOfBirthSchema = z
+  .string()
+  .regex(
+    /^\d{4}-\d{2}-\d{2}$/,
+    "Date of birth must use YYYY-MM-DD format."
+  )
+  .refine((value) => {
+    if (!isValidDateOnly(value)) return false;
+    return new Date(`${value}T00:00:00Z`) <= new Date();
+  }, "Enter a valid date of birth.");
+
 export const loginSchema = z.object({
   email: z
     .string()
@@ -77,12 +88,7 @@ export const registerSchema = z
         "Last name is too long."
       ),
 
-    dateOfBirth: z
-      .string()
-      .regex(
-        /^\d{4}-\d{2}-\d{2}$/,
-        "Date of birth must use YYYY-MM-DD format."
-      ),
+    dateOfBirth: dateOfBirthSchema,
 
     sex: z.enum([
       "FEMALE",
@@ -146,31 +152,6 @@ export const registerSchema = z
         });
       }
 
-      const validDate =
-        isValidDateOnly(
-          data.dateOfBirth
-        );
-
-      const dateOfBirth =
-        validDate
-          ? new Date(
-              `${data.dateOfBirth}T00:00:00Z`
-            )
-          : null;
-
-      if (
-        !dateOfBirth ||
-        dateOfBirth > new Date()
-      ) {
-        context.addIssue({
-          code: "custom",
-          path: [
-            "dateOfBirth"
-          ],
-          message:
-            "Enter a valid date of birth."
-        });
-      }
     }
   );
 

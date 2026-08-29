@@ -1,59 +1,41 @@
-import { useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useAuth } from "./auth/AuthContext";
 import { ProtectedRoute } from "./auth/ProtectedRoute";
-import { SignUpPage} from "./pages/SignUpPage";
+import { RoleRoute } from "./auth/RoleRoute";
+import { AppShell } from "./components/layout/AppShell";
+import { AdminPeoplePage } from "./pages/admin/AdminPeoplePage";
+import { AdminAccessPage } from "./pages/admin/AdminAccessPage";
+import { AdminOrganizationsPage } from "./pages/admin/AdminOrganizationsPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
+import { NotFoundPage } from "./pages/NotFoundPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { SignUpPage } from "./pages/SignUpPage";
+import { PatientDashboardPage } from "./pages/patient/PatientDashboardPage";
+import "./App.css";
 
-/**
- * Placeholder landing page for authenticated users. This intentionally
- * stops at "auth works" — role-specific dashboards (admin/doctor/
- * pharmacist/patient) are a later milestone, not part of this one.
- */
-function AuthenticatedHome() {
-  const { user, logout } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  async function handleLogout(): Promise<void> {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }
-
-  return (
-    <main style={{ padding: "2rem", fontFamily: "Arial, sans-serif" }}>
-      <h1>EHR and E-Prescription System</h1>
-      <p>
-        Signed in as {user?.displayName ?? user?.email} — role: <strong>{user?.role}</strong>
-      </p>
-      <button
-        type="button"
-        onClick={() => void handleLogout()}
-        disabled={isLoggingOut}
-        style={{ padding: "0.5rem 1rem" }}
-      >
-        {isLoggingOut ? "Logging out…" : "Log out"}
-      </button>
-    </main>
-  );
-}
-
-function App() {
+export default function App() {
   return (
     <Routes>
-      <Route path="/login"  element={<LoginPage />}/>
-      <Route  path="/signup" element={<SignUpPage />}/>
-
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
       <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<AuthenticatedHome />} />
+        <Route element={<AppShell />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="settings" element={<SettingsPage />} />
+          <Route element={<RoleRoute allowedRoles={["PATIENT"]} />}>
+            <Route path="patient/dashboard" element={<PatientDashboardPage />} />
+          </Route>
+          <Route element={<RoleRoute allowedRoles={["ADMIN"]} />}>
+            <Route path="admin/people" element={<AdminPeoplePage />} />
+            <Route path="admin/access" element={<AdminAccessPage />} />
+            <Route path="admin/organizations" element={<AdminOrganizationsPage />} />
+            <Route path="admin/users" element={<Navigate to="/admin/access" replace />} />
+            <Route path="admin/roles" element={<Navigate to="/admin/access" replace />} />
+            <Route path="admin/staff" element={<Navigate to="/admin/people" replace />} />
+          </Route>
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
       </Route>
-
-      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
-
-export default App;

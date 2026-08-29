@@ -74,6 +74,18 @@ export async function logoutRequest(): Promise<void> {
   await apiClient.post<ApiSuccess<null>>("/auth/logout");
 }
 
+export async function logoutAllRequest(): Promise<void> {
+  await apiClient.post<ApiSuccess<null>>("/auth/logout-all");
+}
+
+export async function changePasswordRequest(input: {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}): Promise<void> {
+  await apiClient.post("/auth/change-password", input);
+}
+
 export async function fetchCurrentUser(): Promise<AuthenticatedUser> {
   const response = await apiClient.get<ApiSuccess<MeResponseData>>("/auth/me");
   return response.data.data.user;

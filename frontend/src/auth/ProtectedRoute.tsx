@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+import { HeartPulse } from "lucide-react";
 
 /**
  * Wrap protected routes with this. Unauthenticated users are
@@ -15,8 +16,11 @@ export function ProtectedRoute() {
 
   if (isLoading) {
     return (
-      <main style={{ padding: "2rem", textAlign: "center", fontFamily: "Arial, sans-serif" }}>
-        <p>Checking your session…</p>
+      <main className="app-loading">
+        <div>
+          <div className="app-loading__mark"><HeartPulse size={28} /></div>
+          <p>Restoring your secure session…</p>
+        </div>
       </main>
     );
   }

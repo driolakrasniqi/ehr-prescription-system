@@ -1,0 +1,318 @@
+.organizations-page {
+  display: grid;
+  gap: 24px;
+}
+.organizations-hero {
+  align-items: center;
+  background: linear-gradient(120deg, #063c55, #0b8588);
+  border-radius: 24px;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  padding: 34px 38px;
+}
+.organizations-hero span,
+.organization-modal header span {
+  color: #79eee0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.organizations-hero h2 {
+  font-size: 34px;
+  margin: 12px 0 8px;
+}
+.organizations-hero p {
+  color: #c9e8ed;
+  margin: 0;
+}
+.organizations-hero button,
+.organization-modal footer button:last-child {
+  align-items: center;
+  background: #fff;
+  border: 0;
+  border-radius: 12px;
+  color: #087478;
+  display: flex;
+  font-weight: 800;
+  gap: 8px;
+  padding: 13px 18px;
+}
+.organizations-notice {
+  align-items: center;
+  border-radius: 14px;
+  display: flex;
+  gap: 10px;
+  padding: 15px 18px;
+}
+.organizations-notice--success {
+  background: #e5f8f1;
+  color: #08735d;
+}
+.organizations-notice--error {
+  background: #fff0f1;
+  color: #b83f4c;
+}
+.organizations-notice button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  margin-left: auto;
+}
+.organizations-toolbar {
+  align-items: center;
+  background: #fff;
+  border: 1px solid #dce7eb;
+  border-radius: 18px;
+  display: flex;
+  justify-content: space-between;
+  padding: 15px;
+}
+.organization-status-filter {
+  align-items: center;
+  color: #71848d;
+  display: flex;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 8px;
+}
+.organization-status-filter select {
+  background: #fff;
+  border: 1px solid #d8e3e7;
+  border-radius: 10px;
+  padding: 9px 11px;
+}
+.organization-tabs {
+  display: flex;
+  gap: 8px;
+}
+.organization-tabs button {
+  background: #f3f7f8;
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 16px;
+}
+.organization-tabs button.active {
+  background: #0c8588;
+  color: #fff;
+}
+.organization-search {
+  align-items: center;
+  border: 1px solid #d8e3e7;
+  border-radius: 12px;
+  display: flex;
+  padding: 0 10px;
+}
+.organization-search input {
+  border: 0;
+  outline: 0;
+  padding: 11px;
+  width: 240px;
+}
+.organization-search button {
+  background: transparent;
+  border: 0;
+}
+.organization-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+.organization-card {
+  background: #fff;
+  border: 1px solid #dce7eb;
+  border-radius: 18px;
+  padding: 22px;
+}
+.organization-card header {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+.organization-card header div {
+  display: grid;
+}
+.organization-card header small {
+  color: #71848d;
+  margin-top: 4px;
+}
+.organization-icon {
+  align-items: center;
+  border-radius: 13px;
+  display: flex;
+  height: 46px;
+  justify-content: center;
+  width: 46px;
+}
+.organization-icon--clinic {
+  background: #e6f2ff;
+  color: #1d6ab2;
+}
+.organization-icon--pharmacy {
+  background: #e5f8f1;
+  color: #08735d;
+}
+.organization-status {
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-left: auto;
+  padding: 6px 9px;
+}
+.organization-status--active {
+  background: #e5f8f1;
+  color: #08735d;
+}
+.organization-status--pending {
+  background: #fff4d8;
+  color: #946713;
+}
+.organization-status--suspended,
+.organization-status--closed {
+  background: #fff0f1;
+  color: #b83f4c;
+}
+.organization-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  margin: 22px 0;
+}
+.organization-card dl div {
+  display: grid;
+  gap: 5px;
+}
+.organization-card dt {
+  color: #71848d;
+  font-size: 12px;
+}
+.organization-card dd {
+  margin: 0;
+}
+.organization-card footer {
+  border-top: 1px solid #e4ecef;
+  display: flex;
+  gap: 10px;
+  padding-top: 16px;
+}
+.organization-card footer button,
+.organization-card footer select {
+  border: 1px solid #cfe0e4;
+  border-radius: 10px;
+  padding: 9px 12px;
+}
+.organization-card footer button {
+  align-items: center;
+  background: #eff9f8;
+  color: #087478;
+  display: flex;
+  gap: 7px;
+}
+.organizations-state {
+  color: #71848d;
+  padding: 40px;
+  text-align: center;
+}
+.organization-backdrop {
+  align-items: center;
+  background: rgba(8, 35, 48, 0.64);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 50;
+}
+.organization-modal {
+  background: #fff;
+  border-radius: 24px;
+  max-height: 92vh;
+  overflow: auto;
+  width: min(900px, 100%);
+}
+.organization-modal header {
+  align-items: flex-start;
+  border-bottom: 1px solid #dce7eb;
+  display: flex;
+  justify-content: space-between;
+  padding: 28px 32px;
+}
+.organization-modal header span {
+  color: #07898b;
+}
+.organization-modal header h2 {
+  font-size: 30px;
+  margin: 8px 0;
+}
+.organization-modal header p {
+  color: #71848d;
+  margin: 0;
+}
+.organization-modal header button {
+  background: #eef3f5;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px;
+}
+.organization-modal form {
+  padding: 28px 32px;
+}
+.organization-form-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr 1fr;
+}
+.organization-form-grid label {
+  display: grid;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 8px;
+}
+.organization-form-grid input,
+.organization-form-grid select {
+  border: 1px solid #ccdce1;
+  border-radius: 12px;
+  padding: 13px;
+}
+.organization-modal form > footer {
+  border-top: 1px solid #dce7eb;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 25px;
+  padding-top: 20px;
+}
+.organization-modal form > footer button:first-child {
+  background: transparent;
+  border: 0;
+  padding: 12px 18px;
+}
+.organization-modal form > footer button:last-child {
+  background: #0c8588;
+  color: #fff;
+}
+.spin {
+  animation: organization-spin 0.8s linear infinite;
+}
+@keyframes organization-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 720px) {
+  .organizations-hero,
+  .organizations-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .organization-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .organization-search input {
+    width: 100%;
+  }
+  .organization-grid {
+    grid-template-columns: 1fr;
+  }
+}

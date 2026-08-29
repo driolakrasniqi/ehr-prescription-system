@@ -1,50 +1,107 @@
-import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
-import { getAccessToken, notifyAuthExpired, setAccessToken } from "../auth/tokenStore";
+import axios, {
+  type AxiosError,
+  type InternalAxiosRequestConfig
+} from "axios";
 
-const API_BASE_URL: string = import.meta.env.VITE_API_URL ?? "http://localhost:5000/api/v1";
+import {
+  getAccessToken,
+  notifyAuthExpired,
+  setAccessToken
+} from "../auth/tokenStore";
 
-export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  withCredentials: true
-});
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ??
+  "http://localhost:5000/api/v1";
 
-// Attach the in-memory access token to every outgoing request.
-apiClient.interceptors.request.use((config) => {
-  const token = getAccessToken();
+export const apiClient =
+  axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true
+  });
 
-  if (token) {
-    config.headers.set("Authorization", `Bearer ${token}`);
+const refreshClient =
+  axios.create({
+    baseURL: API_BASE_URL,
+    withCredentials: true
+  });
+
+apiClient.interceptors.request.use(
+  (
+    config:
+      InternalAxiosRequestConfig
+  ) => {
+    const token = getAccessToken();
+
+    if (token) {
+      config.headers.set(
+        "Authorization",
+        `Bearer ${token}`
+      );
+    }
+
+    return config;
   }
+);
 
-  return config;
-});
-
-interface RetriableRequestConfig extends InternalAxiosRequestConfig {
+interface RetriableRequestConfig
+  extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
 interface RefreshResponseBody {
   success: true;
-  data: { accessToken: string };
+
+  data: {
+    accessToken: string;
+  };
 }
 
-// De-dupes concurrent 401s into a single in-flight refresh call
-// instead of firing one refresh request per failed request.
-let refreshPromise: Promise<string | null> | null = null;
+let refreshPromise:
+  Promise<string | null> | null =
+  null;
 
-async function refreshAccessToken(): Promise<string | null> {
+function isAuthenticationRequest(
+  url: string | undefined
+): boolean {
+  if (!url) {
+    return false;
+  }
+
+  return (
+    url.includes("/auth/login") ||
+    url.includes("/auth/register") ||
+    url.includes("/auth/refresh")
+  );
+}
+
+async function requestNewAccessToken():
+Promise<string | null> {
+  try {
+    const response =
+      await refreshClient.post<
+        RefreshResponseBody
+      >(
+        "/auth/refresh",
+        {}
+      );
+
+    return response
+      .data
+      .data
+      .accessToken;
+  } catch {
+    return null;
+  }
+}
+
+function refreshAccessToken():
+Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise = axios
-      // A bare axios call, not apiClient — this must never go
-      // through the response interceptor below, or a failed refresh
-      // would recurse into itself. The refresh token itself is an
-      // HttpOnly cookie; it is never read or sent by JavaScript.
-      .post<RefreshResponseBody>(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true })
-      .then((response) => response.data.data.accessToken)
-      .catch(() => null)
-      .finally(() => {
-        refreshPromise = null;
-      });
+    refreshPromise =
+      requestNewAccessToken()
+        .finally(() => {
+          refreshPromise = null;
+        });
   }
 
   return refreshPromise;
@@ -52,29 +109,42 @@ async function refreshAccessToken(): Promise<string | null> {
 
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError) => {
-    const originalRequest = error.config as RetriableRequestConfig | undefined;
-    const isUnauthorized = error.response?.status === 401;
-    const alreadyRetried = originalRequest?._retry === true;
 
-    if (!isUnauthorized || !originalRequest || alreadyRetried) {
+  async (error: AxiosError) => {
+    const originalRequest =
+      error.config as
+        | RetriableRequestConfig
+        | undefined;
+
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      isAuthenticationRequest(
+        originalRequest.url
+      )
+    ) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
-    const newAccessToken = await refreshAccessToken();
+    const newAccessToken =
+      await refreshAccessToken();
 
     if (!newAccessToken) {
-      // Refresh token is missing, expired, or revoked — the session
-      // cannot be recovered. Clear auth state; ProtectedRoute will
-      // redirect to /login on the next render.
+      setAccessToken(null);
       notifyAuthExpired();
+
       return Promise.reject(error);
     }
 
     setAccessToken(newAccessToken);
-    originalRequest.headers.set("Authorization", `Bearer ${newAccessToken}`);
+
+    originalRequest.headers.set(
+      "Authorization",
+      `Bearer ${newAccessToken}`
+    );
 
     return apiClient(originalRequest);
   }
