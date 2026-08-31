@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 import type { UserRole } from "./types";
 
@@ -6,24 +6,44 @@ interface RoleRouteProps {
   allowedRoles: UserRole[];
 }
 
-/**
- * Nest inside <ProtectedRoute> — assumes authentication has already
- * been verified there. Only checks role, and (like ProtectedRoute)
- * is a UX convenience: the backend's `requireRole` middleware is the
- * authoritative check. Used for administrator and patient workspaces.
- *
- * Usage:
- *   <Route element={<ProtectedRoute />}>
- *     <Route element={<RoleRoute allowedRoles={["DOCTOR"]} />}>
- *       <Route path="/doctor" element={<DoctorDashboard />} />
- *     </Route>
- *   </Route>
- */
-export function RoleRoute({ allowedRoles }: RoleRouteProps) {
-  const { user } = useAuth();
+function getRoleHome(role: UserRole): string {
+  switch (role) {
+    case "PATIENT":
+      return "/patient";
 
-  if (!user || !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" replace />;
+    case "ADMIN":
+    case "DOCTOR":
+    case "PHARMACIST":
+    default:
+      return "/";
+  }
+}
+
+export function RoleRoute({ allowedRoles }: RoleRouteProps) {
+  const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  if (isLoading) {
+    return null;
+  }
+
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+
+  if (!allowedRoles.includes(user.role)) {
+    return (
+      <Navigate
+        to={getRoleHome(user.role)}
+        replace
+      />
+    );
   }
 
   return <Outlet />;

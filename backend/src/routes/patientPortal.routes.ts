@@ -7,3 +7,5 @@ export const patientPortalRouter = Router();
 
 patientPortalRouter.use(authenticate, requireRole("PATIENT"));
 patientPortalRouter.get("/dashboard", controller.getDashboard);
+patientPortalRouter.get("/profile", controller.getProfile);
+patientPortalRouter.patch("/profile", controller.updateProfile);

@@ -1,5 +1,6 @@
-import type { RowDataPacket } from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { databasePool } from "../config/database.js";
+import type { UpdateOwnPatientProfileInput } from "../validators/patientPortal.validator.js";
 
 interface PatientRow extends RowDataPacket {
   id: number;
@@ -9,6 +10,80 @@ interface PatientRow extends RowDataPacket {
   dateOfBirth: string;
   sex: "FEMALE" | "MALE";
   bloodType: string;
+}
+
+export interface PatientProfileRow extends RowDataPacket {
+  id: number;
+  patientNumber: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  sex: "FEMALE" | "MALE";
+  bloodType: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "UNKNOWN";
+  maritalStatus: "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED" | "OTHER" | "UNKNOWN";
+  occupation: string | null;
+  smokingStatus: "NEVER" | "FORMER" | "CURRENT" | "UNKNOWN";
+  phone: string | null;
+  email: string;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  postalCode: string | null;
+  countryCode: string;
+  status: "ACTIVE" | "INACTIVE" | "DECEASED" | "MERGED";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export async function getPatientProfile(userId: number): Promise<PatientProfileRow | null> {
+  const [rows] = await databasePool.query<PatientProfileRow[]>(
+    `SELECT p.id, p.patient_number AS patientNumber,
+            p.first_name AS firstName, p.last_name AS lastName,
+            DATE_FORMAT(p.date_of_birth, '%Y-%m-%d') AS dateOfBirth,
+            p.sex, p.blood_type AS bloodType, p.marital_status AS maritalStatus,
+            p.occupation, p.smoking_status AS smokingStatus, p.phone,
+            u.email, p.address_line1 AS addressLine1,
+            p.address_line2 AS addressLine2, p.city,
+            p.postal_code AS postalCode, p.country_code AS countryCode,
+            p.status, p.created_at AS createdAt, p.updated_at AS updatedAt
+       FROM patients p
+       JOIN users u ON u.id = p.user_id
+      WHERE p.user_id = ?
+      LIMIT 1`,
+    [userId]
+  );
+  return rows[0] ?? null;
+}
+
+function nullable(value: string): string | null {
+  return value || null;
+}
+
+export async function updateOwnPatientProfile(
+  userId: number,
+  input: UpdateOwnPatientProfileInput
+): Promise<boolean> {
+  const [result] = await databasePool.query<ResultSetHeader>(
+    `UPDATE patients
+        SET phone = ?, occupation = ?, marital_status = ?, smoking_status = ?,
+            address_line1 = ?, address_line2 = ?, city = ?, postal_code = ?,
+            country_code = ?, updated_by_user_id = ?
+      WHERE user_id = ? AND status = 'ACTIVE'`,
+    [
+      nullable(input.phone),
+      nullable(input.occupation),
+      input.maritalStatus,
+      input.smokingStatus,
+      nullable(input.addressLine1),
+      nullable(input.addressLine2),
+      nullable(input.city),
+      nullable(input.postalCode),
+      input.countryCode,
+      userId,
+      userId
+    ]
+  );
+  return result.affectedRows > 0;
 }
 
 interface SummaryRow extends RowDataPacket {

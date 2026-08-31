@@ -383,3 +383,70 @@ test("password change validates current password and invalidates old sessions", 
   assert.equal((await login(patientEmail, oldPassword)).status, 401);
   assert.equal((await login(patientEmail, newPassword)).status, 200);
 });
+
+test("patient can view and update only their own safe profile fields", async () => {
+  const patientEmail = email("self-profile");
+  await registerPatient(patientEmail);
+  const session = await login(patientEmail, "PatientPass123!");
+  const token = session.body.data.accessToken as string;
+
+  const profile = await request("/api/v1/patient/profile", { token });
+  assert.equal(profile.status, 200, JSON.stringify(profile.body));
+  assert.equal(profile.body.data.profile.email, patientEmail);
+  assert.equal(profile.body.data.profile.firstName, "Integration");
+  assert.ok(profile.body.data.profile.patientNumber);
+
+  const updated = await request("/api/v1/patient/profile", {
+    method: "PATCH",
+    token,
+    body: {
+      phone: "+38344123456",
+      occupation: "Teacher",
+      maritalStatus: "MARRIED",
+      smokingStatus: "NEVER",
+      addressLine1: "Example Street 1",
+      addressLine2: "",
+      city: "Prishtina",
+      postalCode: "10000",
+      countryCode: "XK"
+    }
+  });
+  assert.equal(updated.status, 200, JSON.stringify(updated.body));
+  assert.equal(updated.body.data.profile.phone, "+38344123456");
+  assert.equal(updated.body.data.profile.city, "Prishtina");
+
+  const [rows] = await databasePool.query<any[]>(
+    `SELECT p.phone, p.city, p.marital_status, p.updated_by_user_id, u.id AS user_id
+       FROM patients p JOIN users u ON u.id = p.user_id WHERE u.email = ?`,
+    [patientEmail]
+  );
+  assert.equal(rows[0].phone, "+38344123456");
+  assert.equal(rows[0].city, "Prishtina");
+  assert.equal(rows[0].marital_status, "MARRIED");
+  assert.equal(Number(rows[0].updated_by_user_id), Number(rows[0].user_id));
+});
+
+test("patient cannot update protected identity fields", async () => {
+  const patientEmail = email("protected-profile");
+  await registerPatient(patientEmail);
+  const session = await login(patientEmail, "PatientPass123!");
+
+  const result = await request("/api/v1/patient/profile", {
+    method: "PATCH",
+    token: session.body.data.accessToken,
+    body: {
+      firstName: "Changed",
+      phone: "",
+      occupation: "",
+      maritalStatus: "UNKNOWN",
+      smokingStatus: "UNKNOWN",
+      addressLine1: "",
+      addressLine2: "",
+      city: "",
+      postalCode: "",
+      countryCode: "XK"
+    }
+  });
+  assert.equal(result.status, 400, JSON.stringify(result.body));
+  assert.equal(result.body.error.code, "VALIDATION_ERROR");
+});

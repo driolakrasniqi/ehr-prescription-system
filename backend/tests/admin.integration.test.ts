@@ -407,6 +407,15 @@ test("doctor and pharmacist cannot access admin routes", async () => {
   assert.equal(doctorResult.body.error.code, "FORBIDDEN");
   assert.equal(pharmacistResult.status, 403);
   assert.equal(pharmacistResult.body.error.code, "FORBIDDEN");
+
+  const doctorPatientProfile = await request("/api/v1/patient/profile", {
+    token: doctorSession.body.data.accessToken
+  });
+  const pharmacistPatientProfile = await request("/api/v1/patient/profile", {
+    token: pharmacistSession.body.data.accessToken
+  });
+  assert.equal(doctorPatientProfile.status, 403);
+  assert.equal(pharmacistPatientProfile.status, 403);
 });
 
 test("staff creation rejects ADMIN and PATIENT roles", async () => {
