@@ -5,14 +5,14 @@
   "description": "Backend API for the EHR and electronic prescription management system.",
   "type": "module",
   "scripts": {
-  "dev": "tsx watch src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "typecheck": "tsc --noEmit",
-  "seed": "tsx src/scripts/seed.ts",
-  "seed:demo": "tsx src/scripts/seedDemo.ts",
-  "test": "node --import tsx --test tests/*.test.ts"
-},
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx src/scripts/seed.ts",
+    "seed:demo": "tsx src/scripts/seedDemo.ts",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
   "keywords": [
     "ehr",
     "electronic-prescription",

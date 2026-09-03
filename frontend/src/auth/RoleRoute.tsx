@@ -28,22 +28,11 @@ export function RoleRoute({ allowedRoles }: RoleRouteProps) {
   }
 
   if (!user) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-        state={{ from: location.pathname }}
-      />
-    );
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   if (!allowedRoles.includes(user.role)) {
-    return (
-      <Navigate
-        to={getRoleHome(user.role)}
-        replace
-      />
-    );
+    return <Navigate to={getRoleHome(user.role)} replace />;
   }
 
   return <Outlet />;

@@ -1,11 +1,6 @@
-import type {
-  ResultSetHeader,
-  RowDataPacket
-} from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
-import {
-  databasePool
-} from "../config/database.js";
+import { databasePool } from "../config/database.js";
 import { AppError } from "../utils/errors.js";
 import type {
   CreateOrganizationInput,
@@ -16,14 +11,9 @@ import type {
 } from "../validators/adminUser.validator.js";
 import type { UpdateUserProfileInput } from "../validators/adminUser.validator.js";
 
-import type {
-  UserRole,
-  UserStatus,
-  ManageableUserStatus
-} from "../types/auth.types.js";
+import type { UserRole, UserStatus, ManageableUserStatus } from "../types/auth.types.js";
 
-export interface AdminUserRecord
-  extends RowDataPacket {
+export interface AdminUserRecord extends RowDataPacket {
   id: number;
   email: string;
   display_name: string | null;
@@ -40,22 +30,16 @@ export interface AdminUserRecord
   profile_complete: number;
 }
 
-export interface RoleRecord
-  extends RowDataPacket {
+export interface RoleRecord extends RowDataPacket {
   id: number;
   code: UserRole;
   name: string;
 }
 
-export interface OrganizationRecord
-  extends RowDataPacket {
+export interface OrganizationRecord extends RowDataPacket {
   id: number;
   organizationCode: string;
-  organizationType:
-    | "CLINIC"
-    | "PHARMACY"
-    | "LABORATORY"
-    | "OTHER";
+  organizationType: "CLINIC" | "PHARMACY" | "LABORATORY" | "OTHER";
   name: string;
   licenseNumber: string | null;
   phone: string | null;
@@ -69,18 +53,13 @@ export interface OrganizationRecord
   activePractitionerCount: number;
 }
 
-interface RoleIdRow
-  extends RowDataPacket {
+interface RoleIdRow extends RowDataPacket {
   id: number;
 }
 
-export async function getAllUsers():
-Promise<AdminUserRecord[]> {
-  const [rows] =
-    await databasePool.query<
-      AdminUserRecord[]
-    >(
-      `
+export async function getAllUsers(): Promise<AdminUserRecord[]> {
+  const [rows] = await databasePool.query<AdminUserRecord[]>(
+    `
         SELECT
           u.id,
           u.email,
@@ -119,18 +98,14 @@ Promise<AdminUserRecord[]> {
         LEFT JOIN organizations org ON org.id = po.organization_id
         ORDER BY u.created_at DESC
       `
-    );
+  );
 
   return rows;
 }
 
-export async function getActiveRoles():
-Promise<RoleRecord[]> {
-  const [rows] =
-    await databasePool.query<
-      RoleRecord[]
-    >(
-      `
+export async function getActiveRoles(): Promise<RoleRecord[]> {
+  const [rows] = await databasePool.query<RoleRecord[]>(
+    `
         SELECT
           id,
           code,
@@ -139,18 +114,14 @@ Promise<RoleRecord[]> {
         WHERE is_active = TRUE
         ORDER BY id
       `
-    );
+  );
 
   return rows;
 }
 
-export async function getActiveOrganizations():
-Promise<OrganizationRecord[]> {
-  const [rows] =
-    await databasePool.query<
-      OrganizationRecord[]
-    >(
-      `
+export async function getActiveOrganizations(): Promise<OrganizationRecord[]> {
+  const [rows] = await databasePool.query<OrganizationRecord[]>(
+    `
         SELECT
           id,
           organization_code
@@ -174,7 +145,7 @@ Promise<OrganizationRecord[]> {
           organization_type,
           name
       `
-    );
+  );
 
   return rows;
 }
@@ -236,9 +207,7 @@ export async function findOrganizationById(
   return rows[0] ?? null;
 }
 
-export async function createOrganization(
-  input: CreateOrganizationInput
-): Promise<number> {
+export async function createOrganization(input: CreateOrganizationInput): Promise<number> {
   const [result] = await databasePool.query<ResultSetHeader>(
     `
       INSERT INTO organizations (
@@ -309,44 +278,30 @@ export async function updateOrganizationStatus(
   return result.affectedRows > 0;
 }
 
-export async function findRoleByCode(
-  role: UserRole
-): Promise<RoleIdRow | null> {
-  const [rows] =
-    await databasePool.query<
-      RoleIdRow[]
-    >(
-      `
+export async function findRoleByCode(role: UserRole): Promise<RoleIdRow | null> {
+  const [rows] = await databasePool.query<RoleIdRow[]>(
+    `
         SELECT id
         FROM roles
         WHERE code = ?
           AND is_active = TRUE
         LIMIT 1
       `,
-      [role]
-    );
+    [role]
+  );
 
   return rows[0] ?? null;
 }
 
-export async function updateUserRole(
-  userId: number,
-  roleId: number
-): Promise<boolean> {
-  const [result] =
-    await databasePool.query<
-      ResultSetHeader
-    >(
-      `
+export async function updateUserRole(userId: number, roleId: number): Promise<boolean> {
+  const [result] = await databasePool.query<ResultSetHeader>(
+    `
         UPDATE users
         SET role_id = ?
         WHERE id = ?
       `,
-      [
-        roleId,
-        userId
-      ]
-    );
+    [roleId, userId]
+  );
 
   return result.affectedRows > 0;
 }
@@ -354,41 +309,33 @@ export async function updateUserRole(
 export async function countActiveAdminsExcluding(userId: number): Promise<number> {
   const [rows] = await databasePool.query<(RowDataPacket & { total: number })[]>(
     `SELECT COUNT(*) AS total FROM users u JOIN roles r ON r.id = u.role_id
-     WHERE r.code = 'ADMIN' AND u.status = 'ACTIVE' AND u.id <> ?`, [userId]
+     WHERE r.code = 'ADMIN' AND u.status = 'ACTIVE' AND u.id <> ?`,
+    [userId]
   );
   return rows[0]?.total ?? 0;
 }
 
-export async function hasRequiredProfile(
-  userId: number,
-  role: UserRole
-): Promise<boolean> {
+export async function hasRequiredProfile(userId: number, role: UserRole): Promise<boolean> {
   if (role === "ADMIN") {
     return true;
   }
 
   if (role === "PATIENT") {
-    const [rows] =
-      await databasePool.query<
-        RowDataPacket[]
-      >(
-        `
+    const [rows] = await databasePool.query<RowDataPacket[]>(
+      `
           SELECT id
           FROM patients
           WHERE user_id = ?
           LIMIT 1
         `,
-        [userId]
-      );
+      [userId]
+    );
 
     return Boolean(rows[0]);
   }
 
-  const [rows] =
-    await databasePool.query<
-      RowDataPacket[]
-    >(
-      `
+  const [rows] = await databasePool.query<RowDataPacket[]>(
+    `
         SELECT p.id
         FROM practitioners p
         JOIN practitioner_organizations po
@@ -403,21 +350,22 @@ export async function hasRequiredProfile(
           )
         LIMIT 1
       `,
-      [
-        userId,
-        role
-      ]
-    );
+    [userId, role]
+  );
 
   return Boolean(rows[0]);
 }
 
-export async function updateUserStatus(userId: number, status: ManageableUserStatus): Promise<boolean> {
+export async function updateUserStatus(
+  userId: number,
+  status: ManageableUserStatus
+): Promise<boolean> {
   const [result] = await databasePool.query<ResultSetHeader>(
     `UPDATE users SET status = ?,
        failed_login_count = IF(? = 'ACTIVE', 0, failed_login_count),
        locked_until = IF(? = 'ACTIVE', NULL, locked_until)
-     WHERE id = ?`, [status, status, status, userId]
+     WHERE id = ?`,
+    [status, status, status, userId]
   );
   return result.affectedRows > 0;
 }
@@ -439,55 +387,43 @@ export async function unlockUser(userId: number): Promise<boolean> {
   return result.affectedRows > 0;
 }
 
-export async function createStaffAccount( 
+export async function createStaffAccount(
   input: CreateStaffInput,
   passwordHash: string,
   practitionerNumber: string
 ): Promise<number> {
-  const connection =
-    await databasePool.getConnection();
+  const connection = await databasePool.getConnection();
 
   try {
-    await connection
-      .beginTransaction();
+    await connection.beginTransaction();
 
-    const [roles] =
-      await connection.query<
-        (
-          RowDataPacket & {
-            id: number;
-          }
-        )[]
-      >(
-        `
+    const [roles] = await connection.query<
+      (RowDataPacket & {
+        id: number;
+      })[]
+    >(
+      `
           SELECT id
           FROM roles
           WHERE code = ?
             AND is_active = TRUE
           LIMIT 1
         `,
-        [input.role]
-      );
+      [input.role]
+    );
 
     const role = roles[0];
 
     if (!role) {
-      throw new AppError(
-        400,
-        "VALIDATION_ERROR",
-        "The selected role is not available."
-      );
+      throw new AppError(400, "VALIDATION_ERROR", "The selected role is not available.");
     }
 
     /*
      * Doctors must be assigned to an active clinic.
      * Pharmacists must be assigned to an active pharmacy.
      */
-    const [organizations] =
-      await connection.query<
-        RowDataPacket[]
-      >(
-        `
+    const [organizations] = await connection.query<RowDataPacket[]>(
+      `
           SELECT
             id,
             name,
@@ -512,12 +448,8 @@ export async function createStaffAccount(
             )
           LIMIT 1
         `,
-        [
-          input.organizationId,
-          input.role,
-          input.role
-        ]
-      );
+      [input.organizationId, input.role, input.role]
+    );
 
     if (!organizations[0]) {
       throw new AppError(
@@ -529,14 +461,10 @@ export async function createStaffAccount(
       );
     }
 
-    const displayName =
-      `${input.firstName.trim()} ${input.lastName.trim()}`;
+    const displayName = `${input.firstName.trim()} ${input.lastName.trim()}`;
 
-    const [userResult] =
-      await connection.query<
-        ResultSetHeader
-      >(
-        `
+    const [userResult] = await connection.query<ResultSetHeader>(
+      `
           INSERT INTO users (
             role_id,
             email,
@@ -554,21 +482,11 @@ export async function createStaffAccount(
             UTC_TIMESTAMP(3)
           )
         `,
-        [
-          role.id,
-          input.email
-            .trim()
-            .toLowerCase(),
-          passwordHash,
-          displayName
-        ]
-      );
+      [role.id, input.email.trim().toLowerCase(), passwordHash, displayName]
+    );
 
-    const [practitionerResult] =
-      await connection.query<
-        ResultSetHeader
-      >(
-        `
+    const [practitionerResult] = await connection.query<ResultSetHeader>(
+      `
           INSERT INTO practitioners (
             user_id,
             practitioner_number,
@@ -590,21 +508,17 @@ export async function createStaffAccount(
             ?
           )
         `,
-        [
-          userResult.insertId,
-          practitionerNumber,
-          input.firstName.trim(),
-          input.lastName.trim(),
-          input.licenseNumber.trim(),
-          input.specialty?.trim() ||
-            null,
-          input.phone?.trim() ||
-            null,
-          input.email
-            .trim()
-            .toLowerCase()
-        ]
-      );
+      [
+        userResult.insertId,
+        practitionerNumber,
+        input.firstName.trim(),
+        input.lastName.trim(),
+        input.licenseNumber.trim(),
+        input.specialty?.trim() || null,
+        input.phone?.trim() || null,
+        input.email.trim().toLowerCase()
+      ]
+    );
 
     await connection.query(
       `
@@ -632,8 +546,7 @@ export async function createStaffAccount(
         practitionerResult.insertId,
         input.organizationId,
         input.role,
-        input.positionTitle?.trim() ||
-          null
+        input.positionTitle?.trim() || null
       ]
     );
 
@@ -685,12 +598,26 @@ export async function createPatientAccount(
          address_line1, address_line2, city, postal_code, country_code,
          status, created_by_user_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?)`,
-      [userResult.insertId, patientNumber, input.firstName.trim(), input.lastName.trim(),
-       input.dateOfBirth, input.sex, input.bloodType, input.maritalStatus,
-       optionalValue(input.occupation), input.smokingStatus, optionalValue(input.phone), email,
-       optionalValue(input.addressLine1), optionalValue(input.addressLine2),
-       optionalValue(input.city), optionalValue(input.postalCode), input.countryCode,
-       currentAdminId]
+      [
+        userResult.insertId,
+        patientNumber,
+        input.firstName.trim(),
+        input.lastName.trim(),
+        input.dateOfBirth,
+        input.sex,
+        input.bloodType,
+        input.maritalStatus,
+        optionalValue(input.occupation),
+        input.smokingStatus,
+        optionalValue(input.phone),
+        email,
+        optionalValue(input.addressLine1),
+        optionalValue(input.addressLine2),
+        optionalValue(input.city),
+        optionalValue(input.postalCode),
+        input.countryCode,
+        currentAdminId
+      ]
     );
 
     await connection.commit();
@@ -773,7 +700,9 @@ export async function getPatientProfile(userId: number): Promise<PatientProfileR
   return rows[0] ?? null;
 }
 
-export async function getPractitionerProfile(userId: number): Promise<PractitionerProfileRecord | null> {
+export async function getPractitionerProfile(
+  userId: number
+): Promise<PractitionerProfileRecord | null> {
   const [rows] = await databasePool.query<PractitionerProfileRecord[]>(
     `SELECT 'PRACTITIONER' AS type,
             p.practitioner_number AS practitionerNumber,
@@ -823,32 +752,56 @@ export async function updateUserProfile(
              phone = ?, email = ?, address_line1 = ?, address_line2 = ?, city = ?,
              postal_code = ?, country_code = ?, updated_by_user_id = ?
          WHERE user_id = ?`,
-        [input.firstName, input.lastName, input.dateOfBirth, input.sex,
-         input.bloodType, input.maritalStatus, input.smokingStatus, nullable(input.occupation),
-         nullable(input.phone), input.email.toLowerCase(), nullable(input.addressLine1),
-         nullable(input.addressLine2), nullable(input.city), nullable(input.postalCode),
-         input.countryCode, adminId, userId]
+        [
+          input.firstName,
+          input.lastName,
+          input.dateOfBirth,
+          input.sex,
+          input.bloodType,
+          input.maritalStatus,
+          input.smokingStatus,
+          nullable(input.occupation),
+          nullable(input.phone),
+          input.email.toLowerCase(),
+          nullable(input.addressLine1),
+          nullable(input.addressLine2),
+          nullable(input.city),
+          nullable(input.postalCode),
+          input.countryCode,
+          adminId,
+          userId
+        ]
       );
-      if (!patientResult.affectedRows) throw new AppError(409, "PROFILE_REQUIRED", "Patient profile not found.");
-      await connection.query(`UPDATE users SET email = ?, display_name = ? WHERE id = ?`,
-        [input.email.toLowerCase(), displayName, userId]);
+      if (!patientResult.affectedRows)
+        throw new AppError(409, "PROFILE_REQUIRED", "Patient profile not found.");
+      await connection.query(`UPDATE users SET email = ?, display_name = ? WHERE id = ?`, [
+        input.email.toLowerCase(),
+        displayName,
+        userId
+      ]);
     } else {
       const expectedType = input.role === "DOCTOR" ? "CLINIC" : "PHARMACY";
       const [roleRows] = await connection.query<RoleIdRow[]>(
-        `SELECT id FROM roles WHERE code = ? AND is_active = TRUE LIMIT 1`, [input.role]
+        `SELECT id FROM roles WHERE code = ? AND is_active = TRUE LIMIT 1`,
+        [input.role]
       );
-      if (!roleRows[0]) throw new AppError(400, "VALIDATION_ERROR", "Selected role is unavailable.");
+      if (!roleRows[0])
+        throw new AppError(400, "VALIDATION_ERROR", "Selected role is unavailable.");
       const [practitioners] = await connection.query<(RowDataPacket & { id: number })[]>(
-        `SELECT id FROM practitioners WHERE user_id = ? LIMIT 1`, [userId]
+        `SELECT id FROM practitioners WHERE user_id = ? LIMIT 1`,
+        [userId]
       );
       const practitioner = practitioners[0];
-      if (!practitioner) throw new AppError(409, "PROFILE_REQUIRED", "Practitioner profile not found.");
+      if (!practitioner)
+        throw new AppError(409, "PROFILE_REQUIRED", "Practitioner profile not found.");
 
-      const [assignments] = await connection.query<(RowDataPacket & {
-        id: number;
-        organizationId: number;
-        professionalRole: "DOCTOR" | "PHARMACIST";
-      })[]>(
+      const [assignments] = await connection.query<
+        (RowDataPacket & {
+          id: number;
+          organizationId: number;
+          professionalRole: "DOCTOR" | "PHARMACIST";
+        })[]
+      >(
         `SELECT id, organization_id AS organizationId,
                 professional_role AS professionalRole
            FROM practitioner_organizations
@@ -858,31 +811,49 @@ export async function updateUserProfile(
         [practitioner.id]
       );
       const currentAssignment = assignments[0] ?? null;
-      const assignmentChanged = !currentAssignment ||
+      const assignmentChanged =
+        !currentAssignment ||
         currentAssignment.organizationId !== input.organizationId ||
         currentAssignment.professionalRole !== input.role;
 
-      const [organizations] = await connection.query<(RowDataPacket & {
-        organizationType: string;
-        status: OrganizationStatus;
-      })[]>(
+      const [organizations] = await connection.query<
+        (RowDataPacket & {
+          organizationType: string;
+          status: OrganizationStatus;
+        })[]
+      >(
         `SELECT organization_type AS organizationType, status
            FROM organizations WHERE id = ? LIMIT 1`,
         [input.organizationId]
       );
       const organization = organizations[0];
-      if (!organization || organization.organizationType !== expectedType ||
-          (assignmentChanged && organization.status !== "ACTIVE")) {
-        throw new AppError(400, "VALIDATION_ERROR",
-          input.role === "DOCTOR" ? "Select an active clinic for a new doctor assignment." : "Select an active pharmacy for a new pharmacist assignment.");
+      if (
+        !organization ||
+        organization.organizationType !== expectedType ||
+        (assignmentChanged && organization.status !== "ACTIVE")
+      ) {
+        throw new AppError(
+          400,
+          "VALIDATION_ERROR",
+          input.role === "DOCTOR"
+            ? "Select an active clinic for a new doctor assignment."
+            : "Select an active pharmacy for a new pharmacist assignment."
+        );
       }
 
       const displayName = `${input.firstName} ${input.lastName}`;
       await connection.query(
         `UPDATE practitioners SET first_name = ?, last_name = ?, license_number = ?,
              specialty = ?, phone = ?, professional_email = ? WHERE id = ?`,
-        [input.firstName, input.lastName, input.licenseNumber, nullable(input.specialty),
-         nullable(input.phone), input.email.toLowerCase(), practitioner.id]
+        [
+          input.firstName,
+          input.lastName,
+          input.licenseNumber,
+          nullable(input.specialty),
+          nullable(input.phone),
+          input.email.toLowerCase(),
+          practitioner.id
+        ]
       );
       if (assignmentChanged) {
         await connection.query(

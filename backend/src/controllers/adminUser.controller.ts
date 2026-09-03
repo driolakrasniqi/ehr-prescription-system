@@ -1,15 +1,10 @@
-import type {
-  NextFunction,
-  Request,
-  Response
-} from "express";
+import type { NextFunction, Request, Response } from "express";
 
-import * as service
-  from "../services/adminUser.service.js";
+import * as service from "../services/adminUser.service.js";
 
 import {
   updateUserRoleSchema,
-  updateUserStatusSchema, 
+  updateUserStatusSchema,
   updateUserProfileSchema,
   createStaffSchema,
   createPatientSchema,
@@ -20,9 +15,7 @@ import {
   userIdSchema
 } from "../validators/adminUser.validator.js";
 
-import {
-  AppError
-} from "../utils/errors.js";
+import { AppError } from "../utils/errors.js";
 
 export async function listUsers(
   _request: Request,
@@ -30,8 +23,7 @@ export async function listUsers(
   next: NextFunction
 ): Promise<void> {
   try {
-    const users =
-      await service.listUsers();
+    const users = await service.listUsers();
 
     response.status(200).json({
       success: true,
@@ -42,7 +34,7 @@ export async function listUsers(
   } catch (error) {
     next(error);
   }
-} 
+}
 
 export async function getUserDetails(
   request: Request,
@@ -85,8 +77,7 @@ export async function listOrganizations(
   next: NextFunction
 ): Promise<void> {
   try {
-    const organizations =
-      await service.listOrganizations();
+    const organizations = await service.listOrganizations();
 
     response.status(200).json({
       success: true,
@@ -105,8 +96,7 @@ export async function listRoles(
   next: NextFunction
 ): Promise<void> {
   try {
-    const roles =
-      await service.listRoles();
+    const roles = await service.listRoles();
 
     response.status(200).json({
       success: true,
@@ -126,35 +116,22 @@ export async function updateRole(
 ): Promise<void> {
   try {
     if (!request.user) {
-      throw new AppError(
-        401,
-        "UNAUTHENTICATED",
-        "Authentication is required."
-      );
+      throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     }
 
-    const userId =
-      userIdSchema.parse(
-        request.params.userId
-      );
+    const userId = userIdSchema.parse(request.params.userId);
 
-    const input =
-      updateUserRoleSchema.parse(
-        request.body
-      );
+    const input = updateUserRoleSchema.parse(request.body);
 
-    await service.changeUserRole(
-      userId,
-      input.role,
-      request.user.id,
-      { ipAddress: request.ip ?? null, userAgent: request.get("user-agent") ?? null }
-    );
+    await service.changeUserRole(userId, input.role, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
 
     response.status(200).json({
       success: true,
       data: {
-        message:
-          "User role updated successfully."
+        message: "User role updated successfully."
       }
     });
   } catch (error) {
@@ -162,32 +139,61 @@ export async function updateRole(
   }
 }
 
-export async function updateStatus(request: Request, response: Response, next: NextFunction): Promise<void> {
+export async function updateStatus(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     const userId = userIdSchema.parse(request.params.userId);
     const input = updateUserStatusSchema.parse(request.body);
-    await service.changeUserStatus(userId, input.status, request.user.id, { ipAddress: request.ip ?? null, userAgent: request.get("user-agent") ?? null });
-    response.status(200).json({ success: true, data: { message: "User status updated successfully." } });
-  } catch (error) { next(error); }
+    await service.changeUserStatus(userId, input.status, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
+    response
+      .status(200)
+      .json({ success: true, data: { message: "User status updated successfully." } });
+  } catch (error) {
+    next(error);
+  }
 }
 
-export async function unlockUser(request: Request, response: Response, next: NextFunction): Promise<void> {
+export async function unlockUser(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     const userId = userIdSchema.parse(request.params.userId);
-    await service.unlockUser(userId, request.user.id, { ipAddress: request.ip ?? null, userAgent: request.get("user-agent") ?? null });
+    await service.unlockUser(userId, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
     response.status(200).json({ success: true, data: { message: "User unlocked successfully." } });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 }
 
-export async function createStaff(request: Request, response: Response, next: NextFunction): Promise<void> {
+export async function createStaff(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     const input = createStaffSchema.parse(request.body);
-    const userId = await service.createStaff(input, request.user.id, { ipAddress: request.ip ?? null, userAgent: request.get("user-agent") ?? null });
+    const userId = await service.createStaff(input, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
     response.status(201).json({ success: true, data: { userId } });
-  } catch (error) { next(error); }
+  } catch (error) {
+    next(error);
+  }
 }
 
 export async function listManagedOrganizations(
@@ -249,17 +255,26 @@ export async function updateOrganizationStatus(
     if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     const organizationId = organizationIdSchema.parse(request.params.organizationId);
     const { status } = updateOrganizationStatusSchema.parse(request.body);
-    const organization = await service.changeOrganizationStatus(organizationId, status, request.user.id, {
-      ipAddress: request.ip ?? null,
-      userAgent: request.get("user-agent") ?? null
-    });
+    const organization = await service.changeOrganizationStatus(
+      organizationId,
+      status,
+      request.user.id,
+      {
+        ipAddress: request.ip ?? null,
+        userAgent: request.get("user-agent") ?? null
+      }
+    );
     response.status(200).json({ success: true, data: { organization } });
   } catch (error) {
     next(error);
   }
 }
 
-export async function createPatient(request: Request, response: Response, next: NextFunction): Promise<void> {
+export async function createPatient(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     const input = createPatientSchema.parse(request.body);

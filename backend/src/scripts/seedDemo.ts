@@ -1,4 +1,4 @@
-import type { RowDataPacket } from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
 import { databasePool } from "../config/database.js";
 import * as authRepository from "../repositories/auth.repository.js";
@@ -16,14 +16,11 @@ const DEMO_DOCTOR_EMAIL = "demo.doctor@example.com";
 const DEMO_PHARMACIST_EMAIL = "demo.pharmacist@example.com";
 const DEMO_PATIENT_EMAIL = "demo.patient@example.com";
 
-const DEMO_DOCTOR_PASSWORD =
-  process.env.DEMO_DOCTOR_PASSWORD ?? "DemoDoctor123!";
+const DEMO_DOCTOR_PASSWORD = process.env.DEMO_DOCTOR_PASSWORD ?? "DemoDoctor123!";
 
-const DEMO_PHARMACIST_PASSWORD =
-  process.env.DEMO_PHARMACIST_PASSWORD ?? "DemoPharmacist123!";
+const DEMO_PHARMACIST_PASSWORD = process.env.DEMO_PHARMACIST_PASSWORD ?? "DemoPharmacist123!";
 
-const DEMO_PATIENT_PASSWORD =
-  process.env.DEMO_PATIENT_PASSWORD ?? "DemoPatient123!";
+const DEMO_PATIENT_PASSWORD = process.env.DEMO_PATIENT_PASSWORD ?? "DemoPatient123!";
 
 const seedMeta = {
   ipAddress: null,
@@ -36,13 +33,50 @@ interface OrganizationSeedRow extends RowDataPacket {
   status: string;
 }
 
+interface DemoPatientRow extends RowDataPacket {
+  id: number;
+}
+
+interface DemoDoctorRow extends RowDataPacket {
+  id: number;
+}
+
+interface DemoEncounterRow extends RowDataPacket {
+  id: number;
+}
+
+interface DemoMedicationRow extends RowDataPacket {
+  id: number;
+}
+
+async function ensureDemoMedication(): Promise<number> {
+  const medicationCode = "DEMO-PARA-500";
+  const [rows] = await databasePool.query<DemoMedicationRow[]>(
+    `SELECT id FROM medications WHERE medication_code = ? LIMIT 1`,
+    [medicationCode]
+  );
+  if (rows[0]) {
+    console.log(`Skipped medication (already exists): ${medicationCode}`);
+    return rows[0].id;
+  }
+  const [result] = await databasePool.query<ResultSetHeader>(
+    `INSERT INTO medications
+      (medication_code, generic_name, brand_name, active_ingredient_text,
+       strength, dosage_form, default_route, prescription_only, is_active)
+     VALUES (?, 'Paracetamol', NULL, 'Paracetamol', '500 mg', 'Tablet',
+             'Oral', TRUE, TRUE)`,
+    [medicationCode]
+  );
+  console.log(`Created medication: ${medicationCode}`);
+  return result.insertId;
+}
+
 async function ensureOrganization(
   input: CreateOrganizationInput,
   adminUserId: number
 ): Promise<number> {
-  const [rows] =
-    await databasePool.query<OrganizationSeedRow[]>(
-      `
+  const [rows] = await databasePool.query<OrganizationSeedRow[]>(
+    `
         SELECT
           id,
           organization_type,
@@ -51,48 +85,32 @@ async function ensureOrganization(
         WHERE organization_code = ?
         LIMIT 1
       `,
-      [input.organizationCode]
-    );
+    [input.organizationCode]
+  );
 
   const existing = rows[0];
 
   if (existing) {
-    if (
-      existing.organization_type !== input.organizationType ||
-      existing.status !== "ACTIVE"
-    ) {
+    if (existing.organization_type !== input.organizationType || existing.status !== "ACTIVE") {
       throw new Error(
         `Organization '${input.organizationCode}' already exists, but its type or status does not match the demo configuration.`
       );
     }
 
-    console.log(
-      `Skipped organization (already exists): ${input.name}`
-    );
+    console.log(`Skipped organization (already exists): ${input.name}`);
 
     return existing.id;
   }
 
-  const organizationId =
-    await adminService.createOrganization(
-      input,
-      adminUserId,
-      seedMeta
-    );
+  const organizationId = await adminService.createOrganization(input, adminUserId, seedMeta);
 
   console.log(`Created organization: ${input.name}`);
 
   return organizationId;
 }
 
-async function ensureDoctor(
-  adminUserId: number,
-  clinicId: number
-): Promise<boolean> {
-  const existing =
-    await authRepository.findUserByEmail(
-      DEMO_DOCTOR_EMAIL
-    );
+async function ensureDoctor(adminUserId: number, clinicId: number): Promise<boolean> {
+  const existing = await authRepository.findUserByEmail(DEMO_DOCTOR_EMAIL);
 
   if (existing) {
     if (existing.role_code !== "DOCTOR") {
@@ -101,9 +119,7 @@ async function ensureDoctor(
       );
     }
 
-    console.log(
-      `Skipped doctor (already exists): ${DEMO_DOCTOR_EMAIL}`
-    );
+    console.log(`Skipped doctor (already exists): ${DEMO_DOCTOR_EMAIL}`);
 
     return false;
   }
@@ -121,25 +137,15 @@ async function ensureDoctor(
     positionTitle: "General Practitioner"
   });
 
-  await adminService.createStaff(
-    input,
-    adminUserId,
-    seedMeta
-  );
+  await adminService.createStaff(input, adminUserId, seedMeta);
 
   console.log(`Created doctor: ${DEMO_DOCTOR_EMAIL}`);
 
   return true;
 }
 
-async function ensurePharmacist(
-  adminUserId: number,
-  pharmacyId: number
-): Promise<boolean> {
-  const existing =
-    await authRepository.findUserByEmail(
-      DEMO_PHARMACIST_EMAIL
-    );
+async function ensurePharmacist(adminUserId: number, pharmacyId: number): Promise<boolean> {
+  const existing = await authRepository.findUserByEmail(DEMO_PHARMACIST_EMAIL);
 
   if (existing) {
     if (existing.role_code !== "PHARMACIST") {
@@ -148,9 +154,7 @@ async function ensurePharmacist(
       );
     }
 
-    console.log(
-      `Skipped pharmacist (already exists): ${DEMO_PHARMACIST_EMAIL}`
-    );
+    console.log(`Skipped pharmacist (already exists): ${DEMO_PHARMACIST_EMAIL}`);
 
     return false;
   }
@@ -168,26 +172,15 @@ async function ensurePharmacist(
     positionTitle: "Pharmacist"
   });
 
-  await adminService.createStaff(
-    input,
-    adminUserId,
-    seedMeta
-  );
+  await adminService.createStaff(input, adminUserId, seedMeta);
 
-  console.log(
-    `Created pharmacist: ${DEMO_PHARMACIST_EMAIL}`
-  );
+  console.log(`Created pharmacist: ${DEMO_PHARMACIST_EMAIL}`);
 
   return true;
 }
 
-async function ensurePatient(
-  adminUserId: number
-): Promise<boolean> {
-  const existing =
-    await authRepository.findUserByEmail(
-      DEMO_PATIENT_EMAIL
-    );
+async function ensurePatient(adminUserId: number): Promise<boolean> {
+  const existing = await authRepository.findUserByEmail(DEMO_PATIENT_EMAIL);
 
   if (existing) {
     if (existing.role_code !== "PATIENT") {
@@ -196,9 +189,7 @@ async function ensurePatient(
       );
     }
 
-    console.log(
-      `Skipped patient (already exists): ${DEMO_PATIENT_EMAIL}`
-    );
+    console.log(`Skipped patient (already exists): ${DEMO_PATIENT_EMAIL}`);
 
     return false;
   }
@@ -222,45 +213,120 @@ async function ensurePatient(
     countryCode: "XK"
   });
 
-  await adminService.createPatient(
-    input,
-    adminUserId,
-    seedMeta
-  );
+  await adminService.createPatient(input, adminUserId, seedMeta);
 
-  console.log(
-    `Created patient: ${DEMO_PATIENT_EMAIL}`
-  );
+  console.log(`Created patient: ${DEMO_PATIENT_EMAIL}`);
 
   return true;
 }
 
-function printCredential(
-  role: string,
-  email: string,
-  password: string,
-  created: boolean
-): void {
-  const passwordText = created
-    ? password
-    : "(existing account — password unchanged)";
+async function ensureDemoEncounter(clinicId: number): Promise<number> {
+  const encounterNumber = "DEMO-ENC-001";
 
-  console.log(
-    `${role.padEnd(12)} ${email.padEnd(32)} ${passwordText}`
+  const [existingRows] = await databasePool.query<DemoEncounterRow[]>(
+    `SELECT id
+         FROM encounters
+        WHERE encounter_number = ?
+        LIMIT 1`,
+    [encounterNumber]
   );
+
+  const existingEncounter = existingRows[0];
+
+  if (existingEncounter) {
+    console.log(`Skipped encounter (already exists): ${encounterNumber}`);
+
+    return existingEncounter.id;
+  }
+
+  const [patientRows] = await databasePool.query<DemoPatientRow[]>(
+    `SELECT p.id
+         FROM patients p
+         JOIN users u
+           ON u.id = p.user_id
+        WHERE u.email = ?
+          AND p.status = 'ACTIVE'
+        LIMIT 1`,
+    [DEMO_PATIENT_EMAIL]
+  );
+
+  const patient = patientRows[0];
+
+  if (!patient) {
+    throw new Error(`The demo patient profile for '${DEMO_PATIENT_EMAIL}' was not found.`);
+  }
+
+  const [doctorRows] = await databasePool.query<DemoDoctorRow[]>(
+    `SELECT p.id
+         FROM practitioners p
+         JOIN users u
+           ON u.id = p.user_id
+        WHERE u.email = ?
+          AND p.is_active = TRUE
+        LIMIT 1`,
+    [DEMO_DOCTOR_EMAIL]
+  );
+
+  const doctor = doctorRows[0];
+
+  if (!doctor) {
+    throw new Error(`The demo doctor profile for '${DEMO_DOCTOR_EMAIL}' was not found.`);
+  }
+
+  const [result] = await databasePool.query<ResultSetHeader>(
+    `INSERT INTO encounters (
+         encounter_number,
+         patient_id,
+         doctor_id,
+         organization_id,
+         appointment_id,
+         encounter_type,
+         started_at,
+         ended_at,
+         chief_complaint,
+         symptoms,
+         examination_findings,
+         assessment_summary,
+         plan_summary,
+         status
+       )
+       VALUES (
+         ?,
+         ?,
+         ?,
+         ?,
+         NULL,
+         'CONSULTATION',
+         DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 7 DAY),
+         DATE_ADD(
+           DATE_SUB(UTC_TIMESTAMP(3), INTERVAL 7 DAY),
+           INTERVAL 30 MINUTE
+         ),
+         'Routine health consultation',
+         'Patient attended a scheduled routine consultation.',
+         'General examination completed.',
+         'No urgent clinical concerns identified.',
+         'Continue routine follow-up as needed.',
+         'COMPLETED'
+       )`,
+    [encounterNumber, patient.id, doctor.id, clinicId]
+  );
+
+  console.log(`Created encounter: ${encounterNumber}`);
+
+  return result.insertId;
+}
+
+function printCredential(role: string, email: string, password: string, created: boolean): void {
+  const passwordText = created ? password : "(existing account — password unchanged)";
+
+  console.log(`${role.padEnd(12)} ${email.padEnd(32)} ${passwordText}`);
 }
 
 async function seedDemo(): Promise<void> {
-  const admin =
-    await authRepository.findUserByEmail(
-      ADMIN_EMAIL
-    );
+  const admin = await authRepository.findUserByEmail(ADMIN_EMAIL);
 
-  if (
-    !admin ||
-    admin.role_code !== "ADMIN" ||
-    admin.status !== "ACTIVE"
-  ) {
+  if (!admin || admin.role_code !== "ADMIN" || admin.status !== "ACTIVE") {
     throw new Error(
       `An active administrator '${ADMIN_EMAIL}' is required. Run 'npm run seed' first.`
     );
@@ -296,55 +362,26 @@ async function seedDemo(): Promise<void> {
     status: "ACTIVE"
   });
 
-  const clinicId =
-    await ensureOrganization(
-      clinic,
-      admin.id
-    );
+  const clinicId = await ensureOrganization(clinic, admin.id);
 
-  const pharmacyId =
-    await ensureOrganization(
-      pharmacy,
-      admin.id
-    );
+  const pharmacyId = await ensureOrganization(pharmacy, admin.id);
 
-  const doctorCreated =
-    await ensureDoctor(
-      admin.id,
-      clinicId
-    );
+  const doctorCreated = await ensureDoctor(admin.id, clinicId);
 
-  const pharmacistCreated =
-    await ensurePharmacist(
-      admin.id,
-      pharmacyId
-    );
+  const pharmacistCreated = await ensurePharmacist(admin.id, pharmacyId);
 
-  const patientCreated =
-    await ensurePatient(admin.id);
+  const patientCreated = await ensurePatient(admin.id);
+
+  await ensureDemoEncounter(clinicId);
+  await ensureDemoMedication();
 
   console.log("\n=== Demo credentials ===");
 
-  printCredential(
-    "DOCTOR",
-    DEMO_DOCTOR_EMAIL,
-    DEMO_DOCTOR_PASSWORD,
-    doctorCreated
-  );
+  printCredential("DOCTOR", DEMO_DOCTOR_EMAIL, DEMO_DOCTOR_PASSWORD, doctorCreated);
 
-  printCredential(
-    "PHARMACIST",
-    DEMO_PHARMACIST_EMAIL,
-    DEMO_PHARMACIST_PASSWORD,
-    pharmacistCreated
-  );
+  printCredential("PHARMACIST", DEMO_PHARMACIST_EMAIL, DEMO_PHARMACIST_PASSWORD, pharmacistCreated);
 
-  printCredential(
-    "PATIENT",
-    DEMO_PATIENT_EMAIL,
-    DEMO_PATIENT_PASSWORD,
-    patientCreated
-  );
+  printCredential("PATIENT", DEMO_PATIENT_EMAIL, DEMO_PATIENT_PASSWORD, patientCreated);
 
   console.log(
     "\nAdministrator credentials use the password selected when 'npm run seed' was executed."
@@ -356,10 +393,7 @@ seedDemo()
     await databasePool.end();
   })
   .catch(async (error: unknown) => {
-    console.error(
-      "Demo seeding failed:",
-      error
-    );
+    console.error("Demo seeding failed:", error);
 
     await databasePool.end();
     process.exit(1);

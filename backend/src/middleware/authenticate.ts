@@ -1,20 +1,10 @@
-import type {
-  NextFunction,
-  Request,
-  Response
-} from "express";
+import type { NextFunction, Request, Response } from "express";
 
-import {
-  verifyAccessToken
-} from "../utils/jwt.js";
+import { verifyAccessToken } from "../utils/jwt.js";
 
-import {
-  AppError
-} from "../utils/errors.js";
+import { AppError } from "../utils/errors.js";
 
-import {
-  findUserById
-} from "../repositories/auth.repository.js";
+import { findUserById } from "../repositories/auth.repository.js";
 
 const BEARER_PREFIX = "Bearer ";
 
@@ -23,37 +13,18 @@ export async function authenticate(
   _response: Response,
   next: NextFunction
 ): Promise<void> {
-  const header =
-    request.get("authorization");
+  const header = request.get("authorization");
 
-  if (
-    !header ||
-    !header.startsWith(BEARER_PREFIX)
-  ) {
-    next(
-      new AppError(
-        401,
-        "UNAUTHENTICATED",
-        "An access token is required."
-      )
-    );
+  if (!header || !header.startsWith(BEARER_PREFIX)) {
+    next(new AppError(401, "UNAUTHENTICATED", "An access token is required."));
 
     return;
   }
 
-  const token =
-    header
-      .slice(BEARER_PREFIX.length)
-      .trim();
+  const token = header.slice(BEARER_PREFIX.length).trim();
 
   if (!token) {
-    next(
-      new AppError(
-        401,
-        "UNAUTHENTICATED",
-        "An access token is required."
-      )
-    );
+    next(new AppError(401, "UNAUTHENTICATED", "An access token is required."));
 
     return;
   }
@@ -61,61 +32,31 @@ export async function authenticate(
   let payload;
 
   try {
-    payload =
-      verifyAccessToken(token);
+    payload = verifyAccessToken(token);
   } catch {
-    next(
-      new AppError(
-        401,
-        "UNAUTHENTICATED",
-        "The access token is invalid or has expired."
-      )
-    );
+    next(new AppError(401, "UNAUTHENTICATED", "The access token is invalid or has expired."));
 
     return;
   }
 
   try {
-    const userId =
-      Number(payload.sub);
+    const userId = Number(payload.sub);
 
-    if (
-      !Number.isSafeInteger(userId) ||
-      userId <= 0
-    ) {
-      next(
-        new AppError(
-          401,
-          "UNAUTHENTICATED",
-          "The access token is invalid or has expired."
-        )
-      );
+    if (!Number.isSafeInteger(userId) || userId <= 0) {
+      next(new AppError(401, "UNAUTHENTICATED", "The access token is invalid or has expired."));
 
       return;
     }
 
-    const user =
-      await findUserById(userId);
+    const user = await findUserById(userId);
 
-    if (
-      !user ||
-      user.status !== "ACTIVE"
-    ) {
-      next(
-        new AppError(
-          401,
-          "UNAUTHENTICATED",
-          "This account is no longer active."
-        )
-      );
+    if (!user || user.status !== "ACTIVE") {
+      next(new AppError(401, "UNAUTHENTICATED", "This account is no longer active."));
 
       return;
     }
 
-    if (
-      payload.version !==
-      user.token_version
-    ) {
+    if (payload.version !== user.token_version) {
       next(
         new AppError(
           401,

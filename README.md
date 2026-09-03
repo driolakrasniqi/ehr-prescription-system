@@ -98,11 +98,11 @@ npm run seed:demo
 
 This creates a demo clinic, pharmacy, doctor, pharmacist, and patient.
 
-| Role | Email | Password |
-|---|---|---|
-| Doctor | `demo.doctor@example.com` | `DemoDoctor123!` |
+| Role       | Email                         | Password             |
+| ---------- | ----------------------------- | -------------------- |
+| Doctor     | `demo.doctor@example.com`     | `DemoDoctor123!`     |
 | Pharmacist | `demo.pharmacist@example.com` | `DemoPharmacist123!` |
-| Patient | `demo.patient@example.com` | `DemoPatient123!` |
+| Patient    | `demo.patient@example.com`    | `DemoPatient123!`    |
 
 The accounts are created only in the local database and contain demonstration data. Running the command again skips records that already exist.
 

@@ -35,9 +35,7 @@ export interface RegisterPatientInput {
   lastName: string;
   dateOfBirth: string;
 
-  sex:
-    | "FEMALE"
-    | "MALE";
+  sex: "FEMALE" | "MALE";
 
   phone?: string;
 
@@ -51,16 +49,8 @@ interface RegisterResponseData {
   user: AuthenticatedUser;
 }
 
-export async function registerRequest(
-  input: RegisterPatientInput
-): Promise<RegisterResponseData> {
-  const response =
-    await apiClient.post<
-      ApiSuccess<RegisterResponseData>
-    >(
-      "/auth/register",
-      input
-    );
+export async function registerRequest(input: RegisterPatientInput): Promise<RegisterResponseData> {
+  const response = await apiClient.post<ApiSuccess<RegisterResponseData>>("/auth/register", input);
 
   return response.data.data;
 }

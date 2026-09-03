@@ -1,20 +1,11 @@
 import { AppError } from "../utils/errors.js";
-import type {
-  ResultSetHeader,
-  RowDataPacket
-} from "mysql2/promise";
+import type { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 
-import {
-  databasePool
-} from "../config/database.js";
+import { databasePool } from "../config/database.js";
 
-import type {
-  UserRole,
-  UserStatus
-} from "../types/auth.types.js";
+import type { UserRole, UserStatus } from "../types/auth.types.js";
 
-export interface UserAuthRecord
-  extends RowDataPacket {
+export interface UserAuthRecord extends RowDataPacket {
   id: number;
   email: string;
   password_hash: string;
@@ -27,8 +18,7 @@ export interface UserAuthRecord
   role_code: UserRole;
 }
 
-export interface RefreshTokenRecord
-  extends RowDataPacket {
+export interface RefreshTokenRecord extends RowDataPacket {
   id: number;
   user_id: number;
   expires_at: Date;
@@ -36,8 +26,7 @@ export interface RefreshTokenRecord
   replaced_by_token_id: number | null;
 }
 
-interface RoleIdRow
-  extends RowDataPacket {
+interface RoleIdRow extends RowDataPacket {
   id: number;
 }
 
@@ -51,9 +40,7 @@ export interface CreatePatientAccountInput {
   lastName: string;
   dateOfBirth: string;
 
-  sex:
-    | "FEMALE"
-    | "MALE";
+  sex: "FEMALE" | "MALE";
 
   phone: string | null;
 }
@@ -75,38 +62,28 @@ const USER_AUTH_SELECT = `
     ON r.id = u.role_id
 `;
 
-export async function findUserByEmail(
-  email: string
-): Promise<UserAuthRecord | null> {
-  const [rows] =
-    await databasePool.query<
-      UserAuthRecord[]
-    >(
-      `
+export async function findUserByEmail(email: string): Promise<UserAuthRecord | null> {
+  const [rows] = await databasePool.query<UserAuthRecord[]>(
+    `
         ${USER_AUTH_SELECT}
         WHERE u.email = ?
         LIMIT 1
       `,
-      [email]
-    );
+    [email]
+  );
 
   return rows[0] ?? null;
 }
 
-export async function findUserById(
-  id: number
-): Promise<UserAuthRecord | null> {
-  const [rows] =
-    await databasePool.query<
-      UserAuthRecord[]
-    >(
-      `
+export async function findUserById(id: number): Promise<UserAuthRecord | null> {
+  const [rows] = await databasePool.query<UserAuthRecord[]>(
+    `
         ${USER_AUTH_SELECT}
         WHERE u.id = ?
         LIMIT 1
       `,
-      [id]
-    );
+    [id]
+  );
 
   return rows[0] ?? null;
 }
@@ -129,12 +106,7 @@ export async function registerFailedLogin(
         status = ?
       WHERE id = ?
     `,
-    [
-      failedLoginCount,
-      lockedUntil,
-      status,
-      userId
-    ]
+    [failedLoginCount, lockedUntil, status, userId]
   );
 }
 
@@ -142,9 +114,7 @@ export async function registerFailedLogin(
  * Resets lockout state and records
  * a successful login.
  */
-export async function registerSuccessfulLogin(
-  userId: number
-): Promise<void> {
+export async function registerSuccessfulLogin(userId: number): Promise<void> {
   await databasePool.query(
     `
       UPDATE users
@@ -159,9 +129,7 @@ export async function registerSuccessfulLogin(
   );
 }
 
-export async function incrementTokenVersion(
-  userId: number
-): Promise<void> {
+export async function incrementTokenVersion(userId: number): Promise<void> {
   await databasePool.query(
     `
       UPDATE users
@@ -172,20 +140,15 @@ export async function incrementTokenVersion(
   );
 }
 
-export async function insertRefreshToken(
-  params: {
-    userId: number;
-    tokenHash: Buffer;
-    expiresAt: Date;
-    ipAddress: string | null;
-    userAgent: string | null;
-  }
-): Promise<number> {
-  const [result] =
-    await databasePool.query<
-      ResultSetHeader
-    >(
-      `
+export async function insertRefreshToken(params: {
+  userId: number;
+  tokenHash: Buffer;
+  expiresAt: Date;
+  ipAddress: string | null;
+  userAgent: string | null;
+}): Promise<number> {
+  const [result] = await databasePool.query<ResultSetHeader>(
+    `
         INSERT INTO refresh_tokens (
           user_id,
           token_hash,
@@ -195,14 +158,8 @@ export async function insertRefreshToken(
         )
         VALUES (?, ?, ?, ?, ?)
       `,
-      [
-        params.userId,
-        params.tokenHash,
-        params.expiresAt,
-        params.ipAddress,
-        params.userAgent
-      ]
-    );
+    [params.userId, params.tokenHash, params.expiresAt, params.ipAddress, params.userAgent]
+  );
 
   return result.insertId;
 }
@@ -210,11 +167,8 @@ export async function insertRefreshToken(
 export async function findRefreshTokenByHash(
   tokenHash: Buffer
 ): Promise<RefreshTokenRecord | null> {
-  const [rows] =
-    await databasePool.query<
-      RefreshTokenRecord[]
-    >(
-      `
+  const [rows] = await databasePool.query<RefreshTokenRecord[]>(
+    `
         SELECT
           id,
           user_id,
@@ -225,15 +179,13 @@ export async function findRefreshTokenByHash(
         WHERE token_hash = ?
         LIMIT 1
       `,
-      [tokenHash]
-    );
+    [tokenHash]
+  );
 
   return rows[0] ?? null;
 }
 
-export async function revokeRefreshTokenById(
-  id: number
-): Promise<void> {
+export async function revokeRefreshTokenById(id: number): Promise<void> {
   await databasePool.query(
     `
       UPDATE refresh_tokens
@@ -248,18 +200,15 @@ export async function revokeRefreshTokenById(
 /**
  * Atomically rotates a refresh token.
  */
-export async function rotateRefreshToken(
-  params: {
-    oldTokenId: number;
-    userId: number;
-    newTokenHash: Buffer;
-    newExpiresAt: Date;
-    ipAddress: string | null;
-    userAgent: string | null;
-  }
-): Promise<number> {
-  const connection =
-    await databasePool.getConnection();
+export async function rotateRefreshToken(params: {
+  oldTokenId: number;
+  userId: number;
+  newTokenHash: Buffer;
+  newExpiresAt: Date;
+  ipAddress: string | null;
+  userAgent: string | null;
+}): Promise<number> {
+  const connection = await databasePool.getConnection();
 
   try {
     await connection.beginTransaction();
@@ -271,14 +220,15 @@ export async function rotateRefreshToken(
     );
     const lockedToken = lockedRows[0];
     if (!lockedToken || lockedToken.revoked_at !== null || lockedToken.user_id !== params.userId) {
-      throw new AppError(401, "UNAUTHENTICATED", "The refresh token has already been used or revoked.");
+      throw new AppError(
+        401,
+        "UNAUTHENTICATED",
+        "The refresh token has already been used or revoked."
+      );
     }
 
-    const [insertResult] =
-      await connection.query<
-        ResultSetHeader
-      >(
-        `
+    const [insertResult] = await connection.query<ResultSetHeader>(
+      `
           INSERT INTO refresh_tokens (
             user_id,
             token_hash,
@@ -288,17 +238,10 @@ export async function rotateRefreshToken(
           )
           VALUES (?, ?, ?, ?, ?)
         `,
-        [
-          params.userId,
-          params.newTokenHash,
-          params.newExpiresAt,
-          params.ipAddress,
-          params.userAgent
-        ]
-      );
+      [params.userId, params.newTokenHash, params.newExpiresAt, params.ipAddress, params.userAgent]
+    );
 
-    const newTokenId =
-      insertResult.insertId;
+    const newTokenId = insertResult.insertId;
 
     await connection.query(
       `
@@ -308,10 +251,7 @@ export async function rotateRefreshToken(
           replaced_by_token_id = ?
         WHERE id = ?
       `,
-      [
-        newTokenId,
-        params.oldTokenId
-      ]
+      [newTokenId, params.oldTokenId]
     );
 
     await connection.commit();
@@ -325,11 +265,8 @@ export async function rotateRefreshToken(
   }
 }
 
-export async function createPatientAccount(
-  input: CreatePatientAccountInput
-): Promise<number> {
-  const connection =
-    await databasePool.getConnection();
+export async function createPatientAccount(input: CreatePatientAccountInput): Promise<number> {
+  const connection = await databasePool.getConnection();
 
   try {
     await connection.beginTransaction();
@@ -338,36 +275,27 @@ export async function createPatientAccount(
      * Get the PATIENT role.
      * The frontend never chooses the role.
      */
-    const [roleRows] =
-      await connection.query<
-        RoleIdRow[]
-      >(
-        `
+    const [roleRows] = await connection.query<RoleIdRow[]>(
+      `
           SELECT id
           FROM roles
           WHERE code = 'PATIENT'
             AND is_active = TRUE
           LIMIT 1
         `
-      );
+    );
 
-    const patientRole =
-      roleRows[0];
+    const patientRole = roleRows[0];
 
     if (!patientRole) {
-      throw new Error(
-        "The PATIENT role is not configured."
-      );
+      throw new Error("The PATIENT role is not configured.");
     }
 
     /*
      * First create the authentication account.
      */
-    const [userResult] =
-      await connection.query<
-        ResultSetHeader
-      >(
-        `
+    const [userResult] = await connection.query<ResultSetHeader>(
+      `
           INSERT INTO users (
             role_id,
             email,
@@ -385,16 +313,10 @@ export async function createPatientAccount(
             UTC_TIMESTAMP(3)
           )
         `,
-        [
-          patientRole.id,
-          input.email,
-          input.passwordHash,
-          input.displayName
-        ]
-      );
+      [patientRole.id, input.email, input.passwordHash, input.displayName]
+    );
 
-    const userId =
-      userResult.insertId;
+    const userId = userResult.insertId;
 
     /*
      * Then create the patient's
@@ -404,9 +326,7 @@ export async function createPatientAccount(
      * The database column is "sex",
      * not "gender".
      */
-    await connection.query<
-      ResultSetHeader
-    >(
+    await connection.query<ResultSetHeader>(
       `
         INSERT INTO patients (
           user_id,
@@ -464,10 +384,7 @@ export async function revokeAllRefreshTokensForUser(userId: number): Promise<voi
   );
 }
 
-export async function updatePassword(
-  userId: number,
-  passwordHash: string
-): Promise<void> {
+export async function updatePassword(userId: number, passwordHash: string): Promise<void> {
   await databasePool.query(
     `
       UPDATE users

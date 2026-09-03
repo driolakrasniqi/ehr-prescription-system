@@ -1,9 +1,12 @@
 import { apiClient } from "./client";
 
-interface ApiSuccess<T> { success: true; data: T }
+interface ApiSuccess<T> {
+  success: true;
+  data: T;
+}
 
 export type PatientMaritalStatus =
-  | "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED" | "OTHER" | "UNKNOWN";
+  "SINGLE" | "MARRIED" | "DIVORCED" | "WIDOWED" | "OTHER" | "UNKNOWN";
 export type PatientSmokingStatus = "NEVER" | "FORMER" | "CURRENT" | "UNKNOWN";
 
 export interface PatientProfile {
@@ -42,31 +45,84 @@ export interface UpdatePatientProfileInput {
 
 export interface PatientDashboardData {
   patient: {
-    id: number; patientNumber: string; firstName: string; lastName: string;
-    dateOfBirth: string; sex: "FEMALE" | "MALE"; bloodType: string;
+    id: number;
+    patientNumber: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    sex: "FEMALE" | "MALE";
+    bloodType: string;
   };
   summary: {
-    activePrescriptions: number; upcomingAppointments: number;
-    activeAllergies: number; activeConditions: number;
+    activePrescriptions: number;
+    upcomingAppointments: number;
+    activeAllergies: number;
+    activeConditions: number;
   };
   recentPrescriptions: Array<{
-    id: number; prescriptionNumber: string; status: string;
-    issuedAt: string | null; validUntil: string | null;
-    doctorName: string; organizationName: string;
+    id: number;
+    prescriptionNumber: string;
+    status: string;
+    issuedAt: string | null;
+    validUntil: string | null;
+    doctorName: string;
+    organizationName: string;
+    clinicalReason: string | null;
     items: Array<{
-      id: number; medicationName: string; strength: string; dosageForm: string;
-      frequencyText: string; instructions: string | null;
+      id: number;
+      medicationName: string;
+      strength: string;
+      dosageForm: string;
+      frequencyText: string;
+      quantityPrescribed: number;
+      quantityUnit: string;
+      instructions: string | null;
     }>;
   }>;
   recentEncounters: Array<{
-    id: number; encounterNumber: string; startedAt: string; encounterType: string;
-    chiefComplaint: string | null; status: string; doctorName: string;
+    id: number;
+    encounterNumber: string;
+    startedAt: string;
+    encounterType: string;
+    chiefComplaint: string | null;
+    status: string;
+    doctorName: string;
     organizationName: string;
+    symptoms: string | null;
+    examinationFindings: string | null;
+    assessmentSummary: string | null;
+    planSummary: string | null;
   }>;
   upcomingAppointments: Array<{
-    id: number; appointmentNumber: string; scheduledStart: string; scheduledEnd: string;
-    appointmentType: string; status: string; reason: string | null;
-    practitionerName: string; organizationName: string;
+    id: number;
+    appointmentNumber: string;
+    scheduledStart: string;
+    scheduledEnd: string;
+    appointmentType: string;
+    status: string;
+    reason: string | null;
+    practitionerName: string;
+    organizationName: string;
+  }>;
+  activeAllergies: Array<{
+    id: number;
+    substance: string;
+    category: string;
+    severity: string;
+    reactionDescription: string | null;
+    notes: string | null;
+    recordedAt: string;
+    doctorName: string;
+  }>;
+  activeConditions: Array<{
+    id: number;
+    conditionName: string;
+    category: string;
+    severity: string;
+    onsetDate: string | null;
+    notes: string | null;
+    diagnosedAt: string;
+    doctorName: string;
   }>;
 }
 

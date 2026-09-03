@@ -1,9 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState
-} from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { isAxiosError } from "axios";
 
 import {
@@ -40,10 +35,7 @@ function message(error: unknown): string {
       };
     };
 
-    return (
-      data?.error?.message ??
-      "The request failed."
-    );
+    return data?.error?.message ?? "The request failed.";
   }
 
   return "The request failed.";
@@ -65,45 +57,30 @@ type Confirmation = {
 export function AdminAccessPage() {
   const { user: currentUser } = useAuth();
 
-  const [users, setUsers] =
-    useState<AdminUser[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
-  const [roles, setRoles] =
-    useState<Role[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
 
-  const [query, setQuery] =
-    useState("");
+  const [query, setQuery] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [busy, setBusy] =
-    useState<number | null>(null);
+  const [busy, setBusy] = useState<number | null>(null);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const [notice, setNotice] =
-    useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const [draft, setDraft] =
-    useState<AccessDraft | null>(null);
+  const [draft, setDraft] = useState<AccessDraft | null>(null);
 
-  const [confirmation, setConfirmation] =
-    useState<Confirmation | null>(null);
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [
-        nextUsers,
-        nextRoles
-      ] = await Promise.all([
-        getUsers(),
-        getRoles()
-      ]);
+      const [nextUsers, nextRoles] = await Promise.all([getUsers(), getRoles()]);
 
       setUsers(nextUsers);
       setRoles(nextRoles);
@@ -129,24 +106,20 @@ export function AdminAccessPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filtered = useMemo(() => {
-    const value =
-      query.trim().toLowerCase();
+    const value = query.trim().toLowerCase();
 
     if (!value) {
       return users;
     }
 
     return users.filter((user) =>
-      [
-        user.display_name ?? "",
-        user.email,
-        user.role_code,
-        user.status
-      ]
+      [user.display_name ?? "", user.email, user.role_code, user.status]
         .join(" ")
         .toLowerCase()
         .includes(value)
@@ -157,10 +130,7 @@ export function AdminAccessPage() {
     setDraft({
       user,
       role: user.role_code,
-      status:
-        user.status === "LOCKED"
-          ? "ACTIVE"
-          : user.status
+      status: user.status === "LOCKED" ? "ACTIVE" : user.status
     });
   }
 
@@ -182,24 +152,12 @@ export function AdminAccessPage() {
     setNotice(null);
 
     try {
-      if (
-        action.kind === "ROLE" &&
-        action.role
-      ) {
-        await updateRole(
-          action.user.id,
-          action.role
-        );
+      if (action.kind === "ROLE" && action.role) {
+        await updateRole(action.user.id, action.role);
       }
 
-      if (
-        action.kind === "STATUS" &&
-        action.status
-      ) {
-        await updateStatus(
-          action.user.id,
-          action.status
-        );
+      if (action.kind === "STATUS" && action.status) {
+        await updateStatus(action.user.id, action.status);
       }
 
       if (action.kind === "UNLOCK") {
@@ -209,13 +167,9 @@ export function AdminAccessPage() {
       if (action.kind === "UNLOCK") {
         setNotice("Account unlocked.");
       } else if (action.kind === "ROLE") {
-        setNotice(
-          "Role updated and sessions invalidated."
-        );
+        setNotice("Role updated and sessions invalidated.");
       } else {
-        setNotice(
-          "Account status updated."
-        );
+        setNotice("Account status updated.");
       }
 
       await load();
@@ -235,9 +189,8 @@ export function AdminAccessPage() {
           <h2>People &amp; Access</h2>
 
           <p>
-            Manage roles, account states and
-            locked identities without mixing
-            security controls with profile data.
+            Manage roles, account states and locked identities without mixing security controls with
+            profile data.
           </p>
         </div>
 
@@ -250,11 +203,7 @@ export function AdminAccessPage() {
 
           {notice}
 
-          <button
-            type="button"
-            onClick={() => setNotice(null)}
-            aria-label="Close notification"
-          >
+          <button type="button" onClick={() => setNotice(null)} aria-label="Close notification">
             <X size={16} />
           </button>
         </div>
@@ -266,11 +215,7 @@ export function AdminAccessPage() {
 
           {error}
 
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            aria-label="Close error"
-          >
+          <button type="button" onClick={() => setError(null)} aria-label="Close error">
             <X size={16} />
           </button>
         </div>
@@ -281,10 +226,7 @@ export function AdminAccessPage() {
           <div>
             <h3>Accounts and permissions</h3>
 
-            <p>
-              Profile information is managed
-              from People Directory.
-            </p>
+            <p>Profile information is managed from People Directory.</p>
           </div>
 
           <div className="access-tools">
@@ -293,24 +235,13 @@ export function AdminAccessPage() {
 
               <input
                 value={query}
-                onChange={(event) =>
-                  setQuery(event.target.value)
-                }
+                onChange={(event) => setQuery(event.target.value)}
                 placeholder="Search name, email or role"
               />
             </label>
 
-            <button
-              type="button"
-              onClick={() => void load()}
-              aria-label="Refresh accounts"
-            >
-              <RefreshCw
-                className={
-                  loading ? "spin" : undefined
-                }
-                size={17}
-              />
+            <button type="button" onClick={() => void load()} aria-label="Refresh accounts">
+              <RefreshCw className={loading ? "spin" : undefined} size={17} />
             </button>
           </div>
         </header>
@@ -318,7 +249,6 @@ export function AdminAccessPage() {
         {loading ? (
           <div className="access-state">
             <LoaderCircle className="spin" />
-
             Loading access directory…
           </div>
         ) : (
@@ -337,19 +267,14 @@ export function AdminAccessPage() {
 
               <tbody>
                 {filtered.map((user) => {
-                  const isSelf =
-                    currentUser?.id === user.id;
+                  const isSelf = currentUser?.id === user.id;
 
-                  const isBusy =
-                    busy === user.id;
+                  const isBusy = busy === user.id;
 
                   return (
                     <tr key={user.id}>
                       <td>
-                        <strong>
-                          {user.display_name ??
-                            "Unnamed account"}
-                        </strong>
+                        <strong>{user.display_name ?? "Unnamed account"}</strong>
 
                         <small>{user.email}</small>
                       </td>
@@ -370,42 +295,24 @@ export function AdminAccessPage() {
                         </span>
                       </td>
 
-                      <td>
-                        {user.failed_login_count}
-                      </td>
+                      <td>{user.failed_login_count}</td>
 
                       <td>
-                        {user.locked_until
-                          ? new Date(
-                              user.locked_until
-                            ).toLocaleString()
-                          : "—"}
+                        {user.locked_until ? new Date(user.locked_until).toLocaleString() : "—"}
                       </td>
 
                       <td>
                         <button
                           type="button"
-                          disabled={
-                            isBusy || isSelf
-                          }
-                          title={
-                            isSelf
-                              ? "You cannot modify your own access here."
-                              : undefined
-                          }
-                          onClick={() =>
-                            openAccess(user)
-                          }
+                          disabled={isBusy || isSelf}
+                          title={isSelf ? "You cannot modify your own access here." : undefined}
+                          onClick={() => openAccess(user)}
                         >
                           {isBusy ? (
-                            <LoaderCircle
-                              className="spin"
-                              size={15}
-                            />
+                            <LoaderCircle className="spin" size={15} />
                           ) : (
                             <KeyRound size={15} />
                           )}
-
                           Manage access
                         </button>
                       </td>
@@ -415,11 +322,7 @@ export function AdminAccessPage() {
               </tbody>
             </table>
 
-            {!filtered.length && (
-              <div className="access-state">
-                No matching accounts.
-              </div>
-            )}
+            {!filtered.length && <div className="access-state">No matching accounts.</div>}
           </div>
         )}
       </section>
@@ -436,41 +339,27 @@ export function AdminAccessPage() {
               <div>
                 <span>ACCOUNT SECURITY</span>
 
-                <h2 id="access-dialog-title">
-                  Manage access
-                </h2>
+                <h2 id="access-dialog-title">Manage access</h2>
 
                 <p>
-                  {draft.user.display_name ??
-                    draft.user.email}
+                  {draft.user.display_name ?? draft.user.email}
                   {" · "}
                   {draft.user.email}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setDraft(null)}
-                aria-label="Close dialog"
-              >
+              <button type="button" onClick={() => setDraft(null)} aria-label="Close dialog">
                 <X />
               </button>
             </header>
 
             <div className="access-dialog__body">
-              {draft.user.status ===
-              "LOCKED" ? (
+              {draft.user.status === "LOCKED" ? (
                 <div className="access-control">
                   <div>
-                    <strong>
-                      Locked account
-                    </strong>
+                    <strong>Locked account</strong>
 
-                    <p>
-                      Reset the failed-login
-                      counter and reactivate
-                      this account.
-                    </p>
+                    <p>Reset the failed-login counter and reactivate this account.</p>
                   </div>
 
                   <button
@@ -487,90 +376,78 @@ export function AdminAccessPage() {
                 </div>
               ) : (
                 <>
-                  {isProfessionalRole(draft.user.role_code) ? <div className="access-control">
-                    <label>
-                      Professional role
+                  {isProfessionalRole(draft.user.role_code) ? (
+                    <div className="access-control">
+                      <label>
+                        Professional role
+                        <select
+                          value={draft.role}
+                          onChange={(event) =>
+                            setDraft({
+                              ...draft,
+                              role: event.target.value as UserRole
+                            })
+                          }
+                        >
+                          {roles
+                            .filter((role) => isProfessionalRole(role.code))
+                            .map((role) => (
+                              <option value={role.code} key={role.id}>
+                                {role.name}
+                              </option>
+                            ))}
+                        </select>
+                      </label>
 
-                      <select
-                        value={draft.role}
-                        onChange={(event) =>
-                          setDraft({
-                            ...draft,
-                            role:
-                              event.target
-                                .value as UserRole
+                      <button
+                        type="button"
+                        disabled={draft.role === draft.user.role_code}
+                        onClick={() =>
+                          setConfirmation({
+                            kind: "ROLE",
+                            user: draft.user,
+                            role: draft.role
                           })
                         }
                       >
-                        {roles.filter((role) => isProfessionalRole(role.code)).map((role) => (
-                          <option
-                            value={role.code}
-                            key={role.id}
-                          >
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <button
-                      type="button"
-                      disabled={
-                        draft.role ===
-                        draft.user.role_code
-                      }
-                      onClick={() =>
-                        setConfirmation({
-                          kind: "ROLE",
-                          user: draft.user,
-                          role: draft.role
-                        })
-                      }
-                    >
-                      Review role change
-                    </button>
-                  </div> : <div className="access-control">
-                    <div>
-                      <strong>{draft.user.role_name}</strong>
-                      <p>Patient and administrator accounts are not converted into other account types. Create a separate account when a person needs a different identity.</p>
+                        Review role change
+                      </button>
                     </div>
-                  </div>}
+                  ) : (
+                    <div className="access-control">
+                      <div>
+                        <strong>{draft.user.role_name}</strong>
+                        <p>
+                          Patient and administrator accounts are not converted into other account
+                          types. Create a separate account when a person needs a different identity.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="access-control">
                     <label>
                       Status
-
                       <select
                         value={draft.status}
                         onChange={(event) =>
                           setDraft({
                             ...draft,
-                            status:
-                              event.target
-                                .value as EditableStatus
+                            status: event.target.value as EditableStatus
                           })
                         }
                       >
-                        <option value="PENDING">
-                          Pending
-                        </option>
+                        <option value="PENDING">Pending</option>
 
-                        <option value="ACTIVE">
-                          Active
-                        </option>
+                        <option value="ACTIVE">Active</option>
 
-                        <option value="DISABLED">
-                          Disabled
-                        </option>
+                        <option value="DISABLED">Disabled</option>
                       </select>
                     </label>
 
                     <button
                       type="button"
-                      disabled={
-                        draft.status ===
-                        draft.user.status
-                      }
+                      disabled={draft.status === draft.user.status}
                       onClick={() =>
                         setConfirmation({
                           kind: "STATUS",
@@ -599,51 +476,26 @@ export function AdminAccessPage() {
           >
             <AlertCircle />
 
-            <h2 id="confirm-title">
-              Confirm security change
-            </h2>
+            <h2 id="confirm-title">Confirm security change</h2>
 
             <p>
               {confirmation.kind === "ROLE"
-                ? `Change ${
-                    confirmation.user
-                      .display_name ??
-                    confirmation.user.email
-                  } to ${
+                ? `Change ${confirmation.user.display_name ?? confirmation.user.email} to ${
                     confirmation.role
                   }? Existing sessions will be invalidated.`
-                : confirmation.kind ===
-                    "STATUS"
-                  ? `Change ${
-                      confirmation.user
-                        .display_name ??
-                      confirmation.user.email
-                    } to ${
+                : confirmation.kind === "STATUS"
+                  ? `Change ${confirmation.user.display_name ?? confirmation.user.email} to ${
                       confirmation.status
                     }?`
-                  : `Unlock ${
-                      confirmation.user
-                        .display_name ??
-                      confirmation.user.email
-                    }?`}
+                  : `Unlock ${confirmation.user.display_name ?? confirmation.user.email}?`}
             </p>
 
             <footer>
-              <button
-                type="button"
-                onClick={() =>
-                  setConfirmation(null)
-                }
-              >
+              <button type="button" onClick={() => setConfirmation(null)}>
                 Cancel
               </button>
 
-              <button
-                type="button"
-                onClick={() =>
-                  void executeChange()
-                }
-              >
+              <button type="button" onClick={() => void executeChange()}>
                 Confirm
               </button>
             </footer>

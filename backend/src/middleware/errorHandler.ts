@@ -1,8 +1,4 @@
-import type {
-  NextFunction,
-  Request,
-  Response
-} from "express";
+import type { NextFunction, Request, Response } from "express";
 
 import { ZodError } from "zod";
 import { AppError } from "../utils/errors.js";
@@ -19,16 +15,12 @@ import { AppError } from "../utils/errors.js";
  *   }
  * }
  */
-export function notFoundHandler(
-  _request: Request,
-  response: Response
-): void {
+export function notFoundHandler(_request: Request, response: Response): void {
   response.status(404).json({
     success: false,
     error: {
       code: "NOT_FOUND",
-      message:
-        "The requested endpoint does not exist."
+      message: "The requested endpoint does not exist."
     }
   });
 }
@@ -58,9 +50,7 @@ export function errorHandler(
       error: {
         code: error.code,
         message: error.message,
-        ...(error.details
-          ? { details: error.details }
-          : {})
+        ...(error.details ? { details: error.details } : {})
       }
     });
 
@@ -75,10 +65,8 @@ export function errorHandler(
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message:
-          "The request data is invalid.",
-        details:
-          error.flatten().fieldErrors
+        message: "The request data is invalid.",
+        details: error.flatten().fieldErrors
       }
     });
 
@@ -99,8 +87,7 @@ export function errorHandler(
       success: false,
       error: {
         code: "VALIDATION_ERROR",
-        message:
-          "The request body contains invalid JSON."
+        message: "The request body contains invalid JSON."
       }
     });
 
@@ -119,8 +106,7 @@ export function errorHandler(
     success: false,
     error: {
       code: "INTERNAL_ERROR",
-      message:
-        "An internal server error occurred."
+      message: "An internal server error occurred."
     }
   });
 }

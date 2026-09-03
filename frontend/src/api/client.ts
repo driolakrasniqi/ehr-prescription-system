@@ -1,50 +1,30 @@
-import axios, {
-  type AxiosError,
-  type InternalAxiosRequestConfig
-} from "axios";
+import axios, { type AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-import {
-  getAccessToken,
-  notifyAuthExpired,
-  setAccessToken
-} from "../auth/tokenStore";
+import { getAccessToken, notifyAuthExpired, setAccessToken } from "../auth/tokenStore";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL ??
-  "http://localhost:5000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000/api/v1";
 
-export const apiClient =
-  axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true
-  });
+export const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true
+});
 
-const refreshClient =
-  axios.create({
-    baseURL: API_BASE_URL,
-    withCredentials: true
-  });
+const refreshClient = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true
+});
 
-apiClient.interceptors.request.use(
-  (
-    config:
-      InternalAxiosRequestConfig
-  ) => {
-    const token = getAccessToken();
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = getAccessToken();
 
-    if (token) {
-      config.headers.set(
-        "Authorization",
-        `Bearer ${token}`
-      );
-    }
-
-    return config;
+  if (token) {
+    config.headers.set("Authorization", `Bearer ${token}`);
   }
-);
 
-interface RetriableRequestConfig
-  extends InternalAxiosRequestConfig {
+  return config;
+});
+
+interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
@@ -56,52 +36,33 @@ interface RefreshResponseBody {
   };
 }
 
-let refreshPromise:
-  Promise<string | null> | null =
-  null;
+let refreshPromise: Promise<string | null> | null = null;
 
-function isAuthenticationRequest(
-  url: string | undefined
-): boolean {
+function isAuthenticationRequest(url: string | undefined): boolean {
   if (!url) {
     return false;
   }
 
   return (
-    url.includes("/auth/login") ||
-    url.includes("/auth/register") ||
-    url.includes("/auth/refresh")
+    url.includes("/auth/login") || url.includes("/auth/register") || url.includes("/auth/refresh")
   );
 }
 
-async function requestNewAccessToken():
-Promise<string | null> {
+async function requestNewAccessToken(): Promise<string | null> {
   try {
-    const response =
-      await refreshClient.post<
-        RefreshResponseBody
-      >(
-        "/auth/refresh",
-        {}
-      );
+    const response = await refreshClient.post<RefreshResponseBody>("/auth/refresh", {});
 
-    return response
-      .data
-      .data
-      .accessToken;
+    return response.data.data.accessToken;
   } catch {
     return null;
   }
 }
 
-function refreshAccessToken():
-Promise<string | null> {
+function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
-    refreshPromise =
-      requestNewAccessToken()
-        .finally(() => {
-          refreshPromise = null;
-        });
+    refreshPromise = requestNewAccessToken().finally(() => {
+      refreshPromise = null;
+    });
   }
 
   return refreshPromise;
@@ -111,26 +72,20 @@ apiClient.interceptors.response.use(
   (response) => response,
 
   async (error: AxiosError) => {
-    const originalRequest =
-      error.config as
-        | RetriableRequestConfig
-        | undefined;
+    const originalRequest = error.config as RetriableRequestConfig | undefined;
 
     if (
       error.response?.status !== 401 ||
       !originalRequest ||
       originalRequest._retry ||
-      isAuthenticationRequest(
-        originalRequest.url
-      )
+      isAuthenticationRequest(originalRequest.url)
     ) {
       return Promise.reject(error);
     }
 
     originalRequest._retry = true;
 
-    const newAccessToken =
-      await refreshAccessToken();
+    const newAccessToken = await refreshAccessToken();
 
     if (!newAccessToken) {
       setAccessToken(null);
@@ -141,10 +96,7 @@ apiClient.interceptors.response.use(
 
     setAccessToken(newAccessToken);
 
-    originalRequest.headers.set(
-      "Authorization",
-      `Bearer ${newAccessToken}`
-    );
+    originalRequest.headers.set("Authorization", `Bearer ${newAccessToken}`);
 
     return apiClient(originalRequest);
   }

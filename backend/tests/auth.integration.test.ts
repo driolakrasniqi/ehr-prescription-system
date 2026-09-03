@@ -45,10 +45,7 @@ async function request(
   };
 }
 
-async function registerPatient(
-  patientEmail: string,
-  password = "PatientPass123!"
-) {
+async function registerPatient(patientEmail: string, password = "PatientPass123!") {
   return request("/api/v1/auth/register", {
     method: "POST",
     body: {
@@ -104,30 +101,20 @@ after(async () => {
     }
     return;
   }
-  const [rows] = await databasePool.query<any[]>(
-    "SELECT id FROM users WHERE email LIKE ?",
-    [`%.${runId}@example.com`]
-  );
+  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email LIKE ?", [
+    `%.${runId}@example.com`
+  ]);
   const ids = rows.map((row) => Number(row.id));
 
   if (ids.length > 0) {
     const placeholders = ids.map(() => "?").join(",");
-    await databasePool.query(
-      `DELETE FROM refresh_tokens WHERE user_id IN (${placeholders})`,
-      ids
-    );
-    await databasePool.query(
-      `DELETE FROM patients WHERE user_id IN (${placeholders})`,
-      ids
-    );
+    await databasePool.query(`DELETE FROM refresh_tokens WHERE user_id IN (${placeholders})`, ids);
+    await databasePool.query(`DELETE FROM patients WHERE user_id IN (${placeholders})`, ids);
     await databasePool.query(
       `DELETE FROM audit_events WHERE actor_user_id IN (${placeholders})`,
       ids
     );
-    await databasePool.query(
-      `DELETE FROM users WHERE id IN (${placeholders})`,
-      ids
-    );
+    await databasePool.query(`DELETE FROM users WHERE id IN (${placeholders})`, ids);
   }
 
   await databasePool.end();

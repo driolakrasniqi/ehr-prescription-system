@@ -11,6 +11,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PatientDashboardPage } from "./pages/patient/PatientDashboardPage";
 import { PatientProfilePage } from "./pages/patient/PatientProfilePage";
+import { DoctorPatientsPage } from "./pages/doctor/DoctorPatientsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignUpPage } from "./pages/SignUpPage";
 import "./App.css";
@@ -20,10 +21,6 @@ function HomePage() {
 
   if (!user) {
     return null;
-  }
-
-  if (user.role === "PATIENT") {
-    return <Navigate to="/patient" replace />;
   }
 
   return <DashboardPage />;
@@ -45,62 +42,32 @@ export default function App() {
           <Route path="settings" element={<SettingsPage />} />
 
           {/* Patient-only pages */}
-          <Route
-            element={
-              <RoleRoute allowedRoles={["PATIENT"]} />
-            }
-          >
-            <Route
-              path="patient"
-              element={<PatientDashboardPage />}
-            />
+          <Route element={<RoleRoute allowedRoles={["PATIENT"]} />}>
+            <Route path="patient" element={<PatientDashboardPage />} />
 
-            <Route
-              path="patient/profile"
-              element={<PatientProfilePage />}
-            />
+            <Route path="patient/profile" element={<PatientProfilePage />} />
 
-            <Route
-              path="patient/dashboard"
-              element={<Navigate to="/patient" replace />}
-            />
+            <Route path="patient/dashboard" element={<Navigate to="/patient" replace />} />
           </Route>
 
           {/* Administrator-only pages */}
-          <Route
-            element={
-              <RoleRoute allowedRoles={["ADMIN"]} />
-            }
-          >
-            <Route
-              path="admin/people"
-              element={<AdminPeoplePage />}
-            />
+          <Route element={<RoleRoute allowedRoles={["ADMIN"]} />}>
+            <Route path="admin/people" element={<AdminPeoplePage />} />
 
-            <Route
-              path="admin/access"
-              element={<AdminAccessPage />}
-            />
+            <Route path="admin/access" element={<AdminAccessPage />} />
 
-            <Route
-              path="admin/organizations"
-              element={<AdminOrganizationsPage />}
-            />
+            <Route path="admin/organizations" element={<AdminOrganizationsPage />} />
 
-            <Route
-              path="admin/users"
-              element={<Navigate to="/admin/access" replace />}
-            />
+            <Route path="admin/users" element={<Navigate to="/admin/access" replace />} />
 
-            <Route
-              path="admin/roles"
-              element={<Navigate to="/admin/access" replace />}
-            />
+            <Route path="admin/roles" element={<Navigate to="/admin/access" replace />} />
 
-            <Route
-              path="admin/staff"
-              element={<Navigate to="/admin/people" replace />}
-            />
+            <Route path="admin/staff" element={<Navigate to="/admin/people" replace />} />
+          </Route>
+
+          {/* Doctor-only workspace */}
+          <Route element={<RoleRoute allowedRoles={["DOCTOR"]} />}>
+            <Route path="doctor/patients" element={<DoctorPatientsPage />} />
           </Route>
 
           {/* Unknown authenticated URLs */}

@@ -25,22 +25,9 @@
   box-sizing: border-box;
 
   background:
-    radial-gradient(
-      circle at 82% 16%,
-      rgba(31, 183, 166, 0.18),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at 18% 87%,
-      rgba(50, 124, 202, 0.18),
-      transparent 30%
-    ),
-    linear-gradient(
-      145deg,
-      #0c3154 0%,
-      #0a3b63 52%,
-      #07516e 100%
-    );
+    radial-gradient(circle at 82% 16%, rgba(31, 183, 166, 0.18), transparent 28%),
+    radial-gradient(circle at 18% 87%, rgba(50, 124, 202, 0.18), transparent 30%),
+    linear-gradient(145deg, #0c3154 0%, #0a3b63 52%, #07516e 100%);
 
   color: #ffffff;
 }
@@ -92,9 +79,7 @@
   background: rgba(255, 255, 255, 0.12);
   color: #67e0cf;
 
-  box-shadow:
-    inset 0 1px 0
-      rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .brand-name {
@@ -128,12 +113,10 @@
 
   padding: 7px 11px;
 
-  border: 1px solid
-    rgba(103, 224, 207, 0.24);
+  border: 1px solid rgba(103, 224, 207, 0.24);
   border-radius: 999px;
 
-  background:
-    rgba(18, 121, 129, 0.26);
+  background: rgba(18, 121, 129, 0.26);
 
   color: #a3f0e4;
 
@@ -148,8 +131,7 @@
 
   color: #ffffff;
 
-  font-size:
-    clamp(36px, 4vw, 55px);
+  font-size: clamp(36px, 4vw, 55px);
 
   line-height: 1.06;
 
@@ -162,8 +144,7 @@
   max-width: 515px;
   margin: 0;
 
-  color:
-    rgba(234, 244, 251, 0.74);
+  color: rgba(234, 244, 251, 0.74);
 
   font-size: 16px;
   line-height: 1.75;
@@ -193,8 +174,7 @@
 
   border-radius: 11px;
 
-  background:
-    rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.09);
 
   color: #72dfd1;
 }
@@ -213,8 +193,7 @@
 .brand-feature span {
   display: block;
 
-  color:
-    rgba(225, 239, 248, 0.55);
+  color: rgba(225, 239, 248, 0.55);
 
   font-size: 12px;
   line-height: 1.45;
@@ -227,8 +206,7 @@
 
   padding-top: 25px;
 
-  color:
-    rgba(232, 244, 250, 0.5);
+  color: rgba(232, 244, 250, 0.5);
 
   font-size: 11px;
 }
@@ -248,10 +226,7 @@
 
   box-sizing: border-box;
 
-  padding:
-    48px
-    clamp(35px, 7vw, 110px)
-    28px;
+  padding: 48px clamp(35px, 7vw, 110px) 28px;
 
   background: #f8fafc;
 }
@@ -355,17 +330,13 @@
 .input-container:focus-within {
   border-color: #287fb2;
 
-  box-shadow:
-    0 0 0 3px
-      rgba(40, 127, 178, 0.11);
+  box-shadow: 0 0 0 3px rgba(40, 127, 178, 0.11);
 }
 
 .input-container.input-error {
   border-color: #d45959;
 
-  box-shadow:
-    0 0 0 3px
-      rgba(212, 89, 89, 0.07);
+  box-shadow: 0 0 0 3px rgba(212, 89, 89, 0.07);
 }
 
 .input-icon {
@@ -376,8 +347,7 @@
   color: #91a0ae;
 }
 
-.input-container:focus-within
-  .input-icon {
+.input-container:focus-within .input-icon {
   color: #287fb2;
 }
 
@@ -538,9 +508,7 @@
 
   cursor: pointer;
 
-  box-shadow:
-    0 5px 12px
-      rgba(13, 82, 120, 0.15);
+  box-shadow: 0 5px 12px rgba(13, 82, 120, 0.15);
 
   transition:
     background-color 150ms ease,
@@ -551,16 +519,13 @@
 .sign-in-button:hover:not(:disabled) {
   background: #0a4669;
 
-  box-shadow:
-    0 7px 16px
-      rgba(13, 82, 120, 0.2);
+  box-shadow: 0 7px 16px rgba(13, 82, 120, 0.2);
 
   transform: translateY(-1px);
 }
 
 .sign-in-button:focus-visible {
-  outline: 3px solid
-    rgba(40, 127, 178, 0.27);
+  outline: 3px solid rgba(40, 127, 178, 0.27);
 
   outline-offset: 3px;
 }
@@ -580,15 +545,13 @@
 
   box-sizing: border-box;
 
-  border: 2px solid
-    rgba(255, 255, 255, 0.38);
+  border: 2px solid rgba(255, 255, 255, 0.38);
 
   border-top-color: #ffffff;
 
   border-radius: 50%;
 
-  animation:
-    login-spinner 700ms linear infinite;
+  animation: login-spinner 700ms linear infinite;
 }
 
 @keyframes login-spinner {
@@ -684,12 +647,7 @@
 
     padding: 30px 24px 22px;
 
-    background:
-      linear-gradient(
-        180deg,
-        #f0f7fa 0%,
-        #f8fafc 220px
-      );
+    background: linear-gradient(180deg, #f0f7fa 0%, #f8fafc 220px);
   }
 
   .login-form-wrapper {
@@ -711,8 +669,7 @@
     background: #0d5278;
     color: #70dfd1;
 
-    border-color:
-      rgba(13, 82, 120, 0.2);
+    border-color: rgba(13, 82, 120, 0.2);
   }
 
   .mobile-brand .brand-name {
@@ -732,9 +689,7 @@
 
 @media (max-width: 420px) {
   .login-form-section {
-    padding:
-      24px 18px
-      18px;
+    padding: 24px 18px 18px;
   }
 
   .mobile-brand {

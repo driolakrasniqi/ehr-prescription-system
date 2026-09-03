@@ -19,9 +19,16 @@ export async function writeAuditEvent(input: AuditInput): Promise<void> {
       (actor_user_id, actor_role_code, action, entity_type, entity_id, result,
        ip_address, user_agent, metadata_json)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [input.actorUserId ?? null, input.actorRoleCode ?? null, input.action,
-     input.entityType, input.entityId ?? null, input.result,
-     input.ipAddress ?? null, input.userAgent ?? null,
-     input.metadata ? JSON.stringify(input.metadata) : null]
+    [
+      input.actorUserId ?? null,
+      input.actorRoleCode ?? null,
+      input.action,
+      input.entityType,
+      input.entityId ?? null,
+      input.result,
+      input.ipAddress ?? null,
+      input.userAgent ?? null,
+      input.metadata ? JSON.stringify(input.metadata) : null
+    ]
   );
 }

@@ -1,19 +1,10 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
-import type {
-  AccessTokenPayload,
-  UserRole
-} from "../types/auth.types.js";
+import type { AccessTokenPayload, UserRole } from "../types/auth.types.js";
 
-const ACCESS_TOKEN_TTL_SECONDS =
-  env.ACCESS_TOKEN_TTL_MINUTES * 60;
+const ACCESS_TOKEN_TTL_SECONDS = env.ACCESS_TOKEN_TTL_MINUTES * 60;
 
-const VALID_ROLES: UserRole[] = [
-  "ADMIN",
-  "DOCTOR",
-  "PHARMACIST",
-  "PATIENT"
-];
+const VALID_ROLES: UserRole[] = ["ADMIN", "DOCTOR", "PHARMACIST", "PATIENT"];
 
 /**
  * Signs a short-lived access token.
@@ -26,11 +17,7 @@ const VALID_ROLES: UserRole[] = [
  *
  * It does not contain email, name, or clinical data.
  */
-export function signAccessToken(
-  userId: number,
-  role: UserRole,
-  tokenVersion: number
-): string {
+export function signAccessToken(userId: number, role: UserRole, tokenVersion: number): string {
   const payload: AccessTokenPayload = {
     sub: String(userId),
     role,
@@ -38,13 +25,9 @@ export function signAccessToken(
     type: "access"
   };
 
-  return jwt.sign(
-    payload,
-    env.JWT_ACCESS_SECRET,
-    {
-      expiresIn: ACCESS_TOKEN_TTL_SECONDS
-    }
-  );
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET, {
+    expiresIn: ACCESS_TOKEN_TTL_SECONDS
+  });
 }
 
 /**
@@ -57,18 +40,11 @@ export function signAccessToken(
  * - The role is not supported
  * - The token version is invalid
  */
-export function verifyAccessToken(
-  token: string
-): AccessTokenPayload {
-  const decoded = jwt.verify(
-    token,
-    env.JWT_ACCESS_SECRET
-  );
+export function verifyAccessToken(token: string): AccessTokenPayload {
+  const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
 
   if (typeof decoded === "string") {
-    throw new Error(
-      "Unexpected JWT payload format."
-    );
+    throw new Error("Unexpected JWT payload format.");
   }
 
   const sub = decoded["sub"];
@@ -86,9 +62,7 @@ export function verifyAccessToken(
     version < 0 ||
     type !== "access"
   ) {
-    throw new Error(
-      "Malformed access token payload."
-    );
+    throw new Error("Malformed access token payload.");
   }
 
   return {

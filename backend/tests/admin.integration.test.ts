@@ -56,69 +56,39 @@ async function login(email: string, password: string) {
   });
 }
 
-async function createStaff(
-  role: "DOCTOR" | "PHARMACIST",
-  marker: string
-) {
+async function createStaff(role: "DOCTOR" | "PHARMACIST", marker: string) {
   const markerCode = Array.from(marker)
-    .reduce(
-      (hash, character) =>
-        (
-          hash * 31 +
-          character.charCodeAt(0)
-        ) >>> 0,
-      0
-    )
+    .reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0)
     .toString(36)
     .toUpperCase();
 
-  const uniqueCode =
-    `${markerCode}-${runId.slice(-12)}`;
+  const uniqueCode = `${markerCode}-${runId.slice(-12)}`;
 
-  return request(
-    "/api/v1/admin/staff",
-    {
-      method: "POST",
-      token: adminToken,
-      body: {
-        email:
-          `${marker}.${runId}@example.com`,
+  return request("/api/v1/admin/staff", {
+    method: "POST",
+    token: adminToken,
+    body: {
+      email: `${marker}.${runId}@example.com`,
 
-        password:
-          "StaffPassword123!",
+      password: "StaffPassword123!",
 
-        firstName:
-          role === "DOCTOR"
-            ? "Doctor"
-            : "Pharmacist",
+      firstName: role === "DOCTOR" ? "Doctor" : "Pharmacist",
 
-        lastName:
-          "Integration",
+      lastName: "Integration",
 
-        role,
+      role,
 
-        licenseNumber:
-          `LIC-${uniqueCode}`,
+      licenseNumber: `LIC-${uniqueCode}`,
 
-        specialty:
-          role === "DOCTOR"
-            ? "General Medicine"
-            : "Community Pharmacy",
+      specialty: role === "DOCTOR" ? "General Medicine" : "Community Pharmacy",
 
-        phone:
-          "+38344111222",
+      phone: "+38344111222",
 
-        organizationId:
-  role === "DOCTOR"
-    ? clinicOrganizationId
-    : pharmacyOrganizationId,
-    
+      organizationId: role === "DOCTOR" ? clinicOrganizationId : pharmacyOrganizationId,
 
-        positionTitle:
-          role
-      }
+      positionTitle: role
     }
-  );
+  });
 }
 
 before(async () => {
@@ -142,8 +112,7 @@ before(async () => {
   );
   adminId = Number(adminResult.insertId);
 
-  const [clinicResult] =
-  await databasePool.query<any>(
+  const [clinicResult] = await databasePool.query<any>(
     `INSERT INTO organizations
        (
          organization_code,
@@ -159,17 +128,12 @@ before(async () => {
        ?,
        'ACTIVE'
      )`,
-    [
-      `CLINIC-${runId}`,
-      `CLINIC-LIC-${runId}`
-    ]
+    [`CLINIC-${runId}`, `CLINIC-LIC-${runId}`]
   );
 
-clinicOrganizationId =
-  Number(clinicResult.insertId);
+  clinicOrganizationId = Number(clinicResult.insertId);
 
-const [pharmacyResult] =
-  await databasePool.query<any>(
+  const [pharmacyResult] = await databasePool.query<any>(
     `INSERT INTO organizations
        (
          organization_code,
@@ -185,14 +149,10 @@ const [pharmacyResult] =
        ?,
        'ACTIVE'
      )`,
-    [
-      `PHARMACY-${runId}`,
-      `PHARMACY-LIC-${runId}`
-    ]
+    [`PHARMACY-${runId}`, `PHARMACY-LIC-${runId}`]
   );
 
-pharmacyOrganizationId =
-  Number(pharmacyResult.insertId);
+  pharmacyOrganizationId = Number(pharmacyResult.insertId);
 
   server = appModule.app.listen(0, "127.0.0.1");
   await new Promise<void>((resolve, reject) => {
@@ -231,43 +191,35 @@ after(async () => {
     }
     return;
   }
-  const [rows] = await databasePool.query<any[]>(
-    "SELECT id FROM users WHERE email LIKE ?",
-    [`%.${runId}@example.com`]
-  );
+  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email LIKE ?", [
+    `%.${runId}@example.com`
+  ]);
   const ids = rows.map((row) => Number(row.id));
 
   if (ids.length > 0) {
     const placeholders = ids.map(() => "?").join(",");
-    await databasePool.query(
-      `DELETE FROM refresh_tokens WHERE user_id IN (${placeholders})`, ids
-    );
+    await databasePool.query(`DELETE FROM refresh_tokens WHERE user_id IN (${placeholders})`, ids);
     await databasePool.query(
       `DELETE FROM practitioner_organizations WHERE practitioner_id IN
-       (SELECT id FROM practitioners WHERE user_id IN (${placeholders}))`, ids
+       (SELECT id FROM practitioners WHERE user_id IN (${placeholders}))`,
+      ids
     );
+    await databasePool.query(`DELETE FROM practitioners WHERE user_id IN (${placeholders})`, ids);
+    await databasePool.query(`DELETE FROM patients WHERE user_id IN (${placeholders})`, ids);
     await databasePool.query(
-      `DELETE FROM practitioners WHERE user_id IN (${placeholders})`, ids
-    );
-    await databasePool.query(
-      `DELETE FROM patients WHERE user_id IN (${placeholders})`, ids
-    );
-    await databasePool.query(
-      `DELETE FROM audit_events WHERE actor_user_id IN (${placeholders})`, ids
+      `DELETE FROM audit_events WHERE actor_user_id IN (${placeholders})`,
+      ids
     );
     await databasePool.query(`DELETE FROM users WHERE id IN (${placeholders})`, ids);
   }
 
   await databasePool.query(
-  `
+    `
     DELETE FROM organizations
     WHERE id IN (?, ?)
   `,
-  [
-    clinicOrganizationId,
-    pharmacyOrganizationId
-  ]
-);
+    [clinicOrganizationId, pharmacyOrganizationId]
+  );
   await databasePool.end();
   if (server?.listening) {
     await new Promise<void>((resolve, reject) =>
@@ -320,10 +272,7 @@ test("administrator creates complete doctor and pharmacist staff accounts", asyn
     [doctor.body.data.userId, pharmacist.body.data.userId]
   );
   assert.equal(rows.length, 2);
-  assert.deepEqual(
-    new Set(rows.map((row) => row.role_code)),
-    new Set(["DOCTOR", "PHARMACIST"])
-  );
+  assert.deepEqual(new Set(rows.map((row) => row.role_code)), new Set(["DOCTOR", "PHARMACIST"]));
 
   const doctorRow = rows.find((row) => row.role_code === "DOCTOR");
   const pharmacistRow = rows.find((row) => row.role_code === "PHARMACIST");
@@ -382,10 +331,7 @@ test("doctor and pharmacist cannot access admin routes", async () => {
   assert.equal(doctorCreated.status, 201, JSON.stringify(doctorCreated.body));
   assert.equal(pharmacistCreated.status, 201, JSON.stringify(pharmacistCreated.body));
 
-  const doctorSession = await login(
-    `doctor-forbidden.${runId}@example.com`,
-    "StaffPassword123!"
-  );
+  const doctorSession = await login(`doctor-forbidden.${runId}@example.com`, "StaffPassword123!");
 
   const pharmacistSession = await login(
     `pharmacist-forbidden.${runId}@example.com`,
@@ -416,6 +362,22 @@ test("doctor and pharmacist cannot access admin routes", async () => {
   });
   assert.equal(doctorPatientProfile.status, 403);
   assert.equal(pharmacistPatientProfile.status, 403);
+
+  const doctorWorkspace = await request("/api/v1/doctor/workspace", {
+    token: doctorSession.body.data.accessToken
+  });
+  const doctorPatients = await request("/api/v1/doctor/patients", {
+    token: doctorSession.body.data.accessToken
+  });
+  const patientSession = await login(patientEmail, patientPassword);
+  const patientDoctorAccess = await request("/api/v1/doctor/patients", {
+    token: patientSession.body.data.accessToken
+  });
+
+  assert.equal(doctorWorkspace.status, 200, JSON.stringify(doctorWorkspace.body));
+  assert.equal(doctorPatients.status, 200, JSON.stringify(doctorPatients.body));
+  assert.equal(patientDoctorAccess.status, 403);
+  assert.equal(patientDoctorAccess.body.error.code, "FORBIDDEN");
 });
 
 test("staff creation rejects ADMIN and PATIENT roles", async () => {
@@ -457,10 +419,9 @@ test("administrator cannot demote or deactivate themselves", async () => {
 });
 
 test("patient account cannot be converted into a professional account", async () => {
-  const [rows] = await databasePool.query<any[]>(
-    "SELECT id FROM users WHERE email = ?",
-    [patientEmail]
-  );
+  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email = ?", [
+    patientEmail
+  ]);
   const result = await request(`/api/v1/admin/users/${rows[0].id}/role`, {
     method: "PATCH",
     token: adminToken,
@@ -470,143 +431,79 @@ test("patient account cannot be converted into a professional account", async ()
   assert.equal(result.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
 });
 
-test(
-  "professional account cannot be converted directly into an administrator",
-  async () => {
-    const created =
-      await createStaff(
-        "DOCTOR",
-        "role-refresh"
-      );
+test("professional account cannot be converted directly into an administrator", async () => {
+  const created = await createStaff("DOCTOR", "role-refresh");
 
-    assert.equal(
-      created.status,
-      201,
-      JSON.stringify(created.body)
-    );
+  assert.equal(created.status, 201, JSON.stringify(created.body));
 
-    const targetEmail =
-      `role-refresh.${runId}@example.com`;
+  const targetEmail = `role-refresh.${runId}@example.com`;
 
-    const session =
-      await login(
-        targetEmail,
-        "StaffPassword123!"
-      );
+  const session = await login(targetEmail, "StaffPassword123!");
 
-    assert.equal(
-      session.status,
-      200,
-      JSON.stringify(session.body)
-    );
+  assert.equal(session.status, 200, JSON.stringify(session.body));
 
-    assert.ok(
-      session.cookie,
-      "Login must return a refresh-token cookie."
-    );
+  assert.ok(session.cookie, "Login must return a refresh-token cookie.");
 
-    const roleChanged =
-      await request(
-        `/api/v1/admin/users/${created.body.data.userId}/role`,
-        {
-          method: "PATCH",
-          token: adminToken,
-          body: {
-            role: "ADMIN"
-          }
-        }
-      );
+  const roleChanged = await request(`/api/v1/admin/users/${created.body.data.userId}/role`, {
+    method: "PATCH",
+    token: adminToken,
+    body: {
+      role: "ADMIN"
+    }
+  });
 
-    assert.equal(roleChanged.status, 409, JSON.stringify(roleChanged.body));
-    assert.equal(roleChanged.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
+  assert.equal(roleChanged.status, 409, JSON.stringify(roleChanged.body));
+  assert.equal(roleChanged.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
 
-    const refreshResult =
-      await request(
-        "/api/v1/auth/refresh",
-        {
-          method: "POST",
-          cookie: session.cookie
-        }
-      );
+  const refreshResult = await request("/api/v1/auth/refresh", {
+    method: "POST",
+    cookie: session.cookie
+  });
 
-    assert.equal(refreshResult.status, 200, JSON.stringify(refreshResult.body));
-  }
-);
+  assert.equal(refreshResult.status, 200, JSON.stringify(refreshResult.body));
+});
 
-test(
-  "patient account cannot be promoted directly to administrator",
-  async () => {
-    const targetEmail =
-      `role-access.${runId}@example.com`;
+test("patient account cannot be promoted directly to administrator", async () => {
+  const targetEmail = `role-access.${runId}@example.com`;
 
-    const registration =
-      await request(
-        "/api/v1/auth/register",
-        {
-          method: "POST",
-          body: {
-            firstName: "Role",
-            lastName: "Access",
-            dateOfBirth: "1990-01-01",
-            sex: "FEMALE",
-            email: targetEmail,
-            password:
-              "RoleAccessPassword123!",
-            confirmPassword:
-              "RoleAccessPassword123!"
-          }
-        }
-      );
+  const registration = await request("/api/v1/auth/register", {
+    method: "POST",
+    body: {
+      firstName: "Role",
+      lastName: "Access",
+      dateOfBirth: "1990-01-01",
+      sex: "FEMALE",
+      email: targetEmail,
+      password: "RoleAccessPassword123!",
+      confirmPassword: "RoleAccessPassword123!"
+    }
+  });
 
-    assert.equal(
-      registration.status,
-      201,
-      JSON.stringify(registration.body)
-    );
+  assert.equal(registration.status, 201, JSON.stringify(registration.body));
 
-    const session =
-      await login(
-        targetEmail,
-        "RoleAccessPassword123!"
-      );
+  const session = await login(targetEmail, "RoleAccessPassword123!");
 
-    assert.equal(
-      session.status,
-      200,
-      JSON.stringify(session.body)
-    );
+  assert.equal(session.status, 200, JSON.stringify(session.body));
 
-    const oldAccessToken =
-      session.body.data.accessToken as string;
+  const oldAccessToken = session.body.data.accessToken as string;
 
-    const roleChanged =
-      await request(
-        `/api/v1/admin/users/${registration.body.data.user.id}/role`,
-        {
-          method: "PATCH",
-          token: adminToken,
-          body: {
-            role: "ADMIN"
-          }
-        }
-      );
+  const roleChanged = await request(`/api/v1/admin/users/${registration.body.data.user.id}/role`, {
+    method: "PATCH",
+    token: adminToken,
+    body: {
+      role: "ADMIN"
+    }
+  });
 
-    assert.equal(roleChanged.status, 409, JSON.stringify(roleChanged.body));
-    assert.equal(roleChanged.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
+  assert.equal(roleChanged.status, 409, JSON.stringify(roleChanged.body));
+  assert.equal(roleChanged.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
 
-    const oldSession =
-      await request(
-        "/api/v1/auth/me",
-        {
-          token: oldAccessToken
-        }
-      );
+  const oldSession = await request("/api/v1/auth/me", {
+    token: oldAccessToken
+  });
 
-    assert.equal(oldSession.status, 200, JSON.stringify(oldSession.body));
-  }
-);
-
-
+  assert.equal(oldSession.status, 200, JSON.stringify(oldSession.body));
+});
 
 test("disabled account cannot use an access token", async () => {
   const targetEmail = `disabled-target.${runId}@example.com`;
@@ -623,7 +520,9 @@ test("disabled account cannot use an access token", async () => {
     }
   });
   const targetSession = await login(targetEmail, patientPassword);
-  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email = ?", [targetEmail]);
+  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email = ?", [
+    targetEmail
+  ]);
 
   const disabled = await request(`/api/v1/admin/users/${rows[0].id}/status`, {
     method: "PATCH",
@@ -651,7 +550,9 @@ test("unlock succeeds only for a LOCKED account", async () => {
       confirmPassword: patientPassword
     }
   });
-  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email = ?", [targetEmail]);
+  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email = ?", [
+    targetEmail
+  ]);
   const userId = Number(rows[0].id);
   await databasePool.query(
     "UPDATE users SET status = 'LOCKED', failed_login_count = 5, locked_until = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 15 MINUTE) WHERE id = ?",
@@ -673,13 +574,15 @@ test("unlock succeeds only for a LOCKED account", async () => {
 
   await databasePool.query("UPDATE users SET status = 'DISABLED' WHERE id = ?", [userId]);
   assert.equal(
-    (await request(`/api/v1/admin/users/${userId}/unlock`, { method: "POST", token: adminToken })).status,
+    (await request(`/api/v1/admin/users/${userId}/unlock`, { method: "POST", token: adminToken }))
+      .status,
     409
   );
 
   await databasePool.query("UPDATE users SET status = 'PENDING' WHERE id = ?", [userId]);
   assert.equal(
-    (await request(`/api/v1/admin/users/${userId}/unlock`, { method: "POST", token: adminToken })).status,
+    (await request(`/api/v1/admin/users/${userId}/unlock`, { method: "POST", token: adminToken }))
+      .status,
     409
   );
 });
@@ -736,10 +639,11 @@ test("suspending a clinic preserves its doctor and ordinary edits preserve assig
     [userId]
   );
 
-  const suspended = await request(
-    `/api/v1/admin/organizations/${clinicOrganizationId}/status`,
-    { method: "PATCH", token: adminToken, body: { status: "SUSPENDED" } }
-  );
+  const suspended = await request(`/api/v1/admin/organizations/${clinicOrganizationId}/status`, {
+    method: "PATCH",
+    token: adminToken,
+    body: { status: "SUSPENDED" }
+  });
   assert.equal(suspended.status, 200, JSON.stringify(suspended.body));
 
   const updated = await request(`/api/v1/admin/users/${userId}/profile`, {
@@ -773,9 +677,10 @@ test("suspending a clinic preserves its doctor and ordinary edits preserve assig
   assert.equal(Number(afterRows[0].is_active), 1);
   assert.equal(Number(afterRows[0].total), Number(beforeRows[0].total));
 
-  const reactivated = await request(
-    `/api/v1/admin/organizations/${clinicOrganizationId}/status`,
-    { method: "PATCH", token: adminToken, body: { status: "ACTIVE" } }
-  );
+  const reactivated = await request(`/api/v1/admin/organizations/${clinicOrganizationId}/status`, {
+    method: "PATCH",
+    token: adminToken,
+    body: { status: "ACTIVE" }
+  });
   assert.equal(reactivated.status, 200, JSON.stringify(reactivated.body));
 });

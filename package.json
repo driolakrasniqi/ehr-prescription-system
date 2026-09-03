@@ -6,12 +6,15 @@
     "dev": "concurrently --names BACKEND,FRONTEND \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
     "dev:backend": "npm --prefix backend run dev",
     "dev:frontend": "npm --prefix frontend run dev",
-    "typecheck": "npm --prefix backend run typecheck"
+    "typecheck": "npm --prefix backend run typecheck",
+    "lint": "npm --prefix frontend run lint",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "test": "npm --prefix backend test",
+    "format": "prettier --write \"{backend,frontend}/**/*.{ts,tsx,js,jsx,css,json,md}\" \"*.{json,md}\"",
+    "format:check": "prettier --check \"{backend,frontend}/**/*.{ts,tsx,js,jsx,css,json,md}\" \"*.{json,md}\""
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
-  },
-  "dependencies": {
-    "lucide-react": "^1.35.0"
+    "concurrently": "^9.0.0",
+    "prettier": "^3.9.6"
   }
 }

@@ -68,7 +68,11 @@ async function seed(): Promise<void> {
 
     if (existingRows[0]) {
       console.log(`Skipped (already exists): ${definition.roleCode} <${definition.email}>`);
-      printedCredentials.push({ role: definition.roleCode, email: definition.email, password: null });
+      printedCredentials.push({
+        role: definition.roleCode,
+        email: definition.email,
+        password: null
+      });
       continue;
     }
 
@@ -88,13 +92,12 @@ async function seed(): Promise<void> {
   console.log("\n=== Seed credentials (shown once — passwords are not stored anywhere) ===");
 
   for (const credential of printedCredentials) {
-    const passwordDisplay = credential.password ?? "(already existed — password unchanged, not shown)";
+    const passwordDisplay =
+      credential.password ?? "(already existed — password unchanged, not shown)";
     console.log(`${credential.role.padEnd(11)} ${credential.email.padEnd(24)} ${passwordDisplay}`);
   }
 
-  console.log(
-  "\nTip: set SEED_ADMIN_PASSWORD before running the seed script."
-);
+  console.log("\nTip: set SEED_ADMIN_PASSWORD before running the seed script.");
 }
 
 seed()

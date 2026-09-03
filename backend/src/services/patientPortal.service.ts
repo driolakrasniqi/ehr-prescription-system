@@ -41,8 +41,15 @@ export async function updateProfile(
     ...meta,
     metadata: {
       updatedFields: [
-        "phone", "occupation", "maritalStatus", "smokingStatus",
-        "addressLine1", "addressLine2", "city", "postalCode", "countryCode"
+        "phone",
+        "occupation",
+        "maritalStatus",
+        "smokingStatus",
+        "addressLine1",
+        "addressLine2",
+        "city",
+        "postalCode",
+        "countryCode"
       ]
     }
   });

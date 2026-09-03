@@ -1,18 +1,38 @@
 import { apiClient } from "./client";
 import type { UserRole, UserStatus } from "../auth/types";
 
-interface ApiSuccess<T> { success: true; data: T }
-export interface AdminUser { id:number; email:string; display_name:string|null; status:UserStatus; failed_login_count:number; locked_until:string|null; role_id:number; role_code:UserRole; role_name:string; created_at:string; profile_number:string|null; phone:string|null; organization_name:string|null; profile_complete:number }
-export interface Role { id:number; code:UserRole; name:string }
+interface ApiSuccess<T> {
+  success: true;
+  data: T;
+}
+export interface AdminUser {
+  id: number;
+  email: string;
+  display_name: string | null;
+  status: UserStatus;
+  failed_login_count: number;
+  locked_until: string | null;
+  role_id: number;
+  role_code: UserRole;
+  role_name: string;
+  created_at: string;
+  profile_number: string | null;
+  phone: string | null;
+  organization_name: string | null;
+  profile_complete: number;
+}
+export interface Role {
+  id: number;
+  code: UserRole;
+  name: string;
+}
 export interface StaffInput {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
 
-  role:
-    | "DOCTOR"
-    | "PHARMACIST";
+  role: "DOCTOR" | "PHARMACIST";
 
   licenseNumber: string;
   specialty?: string;
@@ -26,11 +46,7 @@ export interface Organization {
 
   organizationCode: string;
 
-  organizationType:
-    | "CLINIC"
-    | "PHARMACY"
-    | "LABORATORY"
-    | "OTHER";
+  organizationType: "CLINIC" | "PHARMACY" | "LABORATORY" | "OTHER";
 
   name: string;
   licenseNumber: string | null;
@@ -66,10 +82,21 @@ export interface CreateOrganizationInput extends OrganizationInput {
 }
 
 export interface PatientInput {
-  email: string; password: string; firstName: string; lastName: string;
-  dateOfBirth: string; sex: "FEMALE" | "MALE"; bloodType: BloodType;
-  maritalStatus: MaritalStatus; smokingStatus: SmokingStatus; occupation?: string; phone?: string;
-  addressLine1?: string; addressLine2?: string; city?: string; postalCode?: string;
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  sex: "FEMALE" | "MALE";
+  bloodType: BloodType;
+  maritalStatus: MaritalStatus;
+  smokingStatus: SmokingStatus;
+  occupation?: string;
+  phone?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  postalCode?: string;
   countryCode: string;
 }
 export type BloodType = "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | "UNKNOWN";
@@ -78,58 +105,117 @@ export type SmokingStatus = "NEVER" | "FORMER" | "CURRENT" | "UNKNOWN";
 
 export type EditableStatus = "PENDING" | "ACTIVE" | "DISABLED";
 export interface AdminAccountDetails {
-  id: number; email: string; displayName: string | null; role: UserRole; status: UserStatus;
+  id: number;
+  email: string;
+  displayName: string | null;
+  role: UserRole;
+  status: UserStatus;
 }
 export interface AdminPatientProfile {
-  type: "PATIENT"; patientNumber: string; firstName: string; lastName: string;
-  dateOfBirth: string; sex: "FEMALE" | "MALE"; bloodType: BloodType;
-  maritalStatus: MaritalStatus; smokingStatus: SmokingStatus; occupation: string | null;
-  phone: string | null; addressLine1: string | null; addressLine2: string | null;
-  city: string | null; postalCode: string | null; countryCode: string;
+  type: "PATIENT";
+  patientNumber: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: string;
+  sex: "FEMALE" | "MALE";
+  bloodType: BloodType;
+  maritalStatus: MaritalStatus;
+  smokingStatus: SmokingStatus;
+  occupation: string | null;
+  phone: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  postalCode: string | null;
+  countryCode: string;
 }
 export interface AdminPractitionerProfile {
-  type: "PRACTITIONER"; practitionerNumber: string; firstName: string;
-  lastName: string; licenseNumber: string; specialty: string | null;
-  phone: string | null; organizationId: number | null; organizationName: string | null;
+  type: "PRACTITIONER";
+  practitionerNumber: string;
+  firstName: string;
+  lastName: string;
+  licenseNumber: string;
+  specialty: string | null;
+  phone: string | null;
+  organizationId: number | null;
+  organizationName: string | null;
   positionTitle: string | null;
 }
-export interface AdminAccountProfile { type: "ACCOUNT" }
+export interface AdminAccountProfile {
+  type: "ACCOUNT";
+}
 export type AdminUserProfile = AdminPatientProfile | AdminPractitionerProfile | AdminAccountProfile;
-export interface AdminUserDetails { account: AdminAccountDetails; profile: AdminUserProfile }
+export interface AdminUserDetails {
+  account: AdminAccountDetails;
+  profile: AdminUserProfile;
+}
 
 export type UpdateUserProfileInput =
   | { profileType: "ACCOUNT"; email: string; displayName: string }
-  | { profileType: "PATIENT"; email: string; firstName: string; lastName: string;
-      dateOfBirth: string; sex: "FEMALE" | "MALE"; bloodType: BloodType;
-      maritalStatus: MaritalStatus; smokingStatus: SmokingStatus; occupation: string; phone: string;
-      addressLine1: string; addressLine2: string; city: string; postalCode: string; countryCode: string }
-  | { profileType: "PRACTITIONER"; role: "DOCTOR" | "PHARMACIST"; email: string;
-      firstName: string; lastName: string; licenseNumber: string; specialty: string;
-      phone: string; organizationId: number; positionTitle: string };
+  | {
+      profileType: "PATIENT";
+      email: string;
+      firstName: string;
+      lastName: string;
+      dateOfBirth: string;
+      sex: "FEMALE" | "MALE";
+      bloodType: BloodType;
+      maritalStatus: MaritalStatus;
+      smokingStatus: SmokingStatus;
+      occupation: string;
+      phone: string;
+      addressLine1: string;
+      addressLine2: string;
+      city: string;
+      postalCode: string;
+      countryCode: string;
+    }
+  | {
+      profileType: "PRACTITIONER";
+      role: "DOCTOR" | "PHARMACIST";
+      email: string;
+      firstName: string;
+      lastName: string;
+      licenseNumber: string;
+      specialty: string;
+      phone: string;
+      organizationId: number;
+      positionTitle: string;
+    };
 
-export async function getUsers() { const response = await apiClient.get<ApiSuccess<{ users:AdminUser[] }>>("/admin/users"); return response.data.data.users; }
-export async function getRoles() { const response = await apiClient.get<ApiSuccess<{ roles:Role[] }>>("/admin/roles"); return response.data.data.roles; }
-export async function updateRole(userId:number, role:UserRole) { await apiClient.patch(`/admin/users/${userId}/role`, { role }); }
-export async function updateStatus(userId:number, status:"PENDING"|"ACTIVE"|"DISABLED") { await apiClient.patch(`/admin/users/${userId}/status`, { status }); }
-export async function unlockUser(userId:number) { await apiClient.post(`/admin/users/${userId}/unlock`); }
-export async function createStaff(input:StaffInput) { const response = await apiClient.post<ApiSuccess<{ userId:number }>>("/admin/staff", input); return response.data.data.userId; }
-export async function createPatient(input:PatientInput) { const response = await apiClient.post<ApiSuccess<{ userId:number }>>("/admin/patients", input); return response.data.data.userId; }
-export async function getOrganizations():
-Promise<Organization[]> {
-  const response =
-    await apiClient.get<
-      ApiSuccess<{
-        organizations:
-          Organization[];
-      }>
-    >(
-      "/admin/organizations"
-    );
+export async function getUsers() {
+  const response = await apiClient.get<ApiSuccess<{ users: AdminUser[] }>>("/admin/users");
+  return response.data.data.users;
+}
+export async function getRoles() {
+  const response = await apiClient.get<ApiSuccess<{ roles: Role[] }>>("/admin/roles");
+  return response.data.data.roles;
+}
+export async function updateRole(userId: number, role: UserRole) {
+  await apiClient.patch(`/admin/users/${userId}/role`, { role });
+}
+export async function updateStatus(userId: number, status: "PENDING" | "ACTIVE" | "DISABLED") {
+  await apiClient.patch(`/admin/users/${userId}/status`, { status });
+}
+export async function unlockUser(userId: number) {
+  await apiClient.post(`/admin/users/${userId}/unlock`);
+}
+export async function createStaff(input: StaffInput) {
+  const response = await apiClient.post<ApiSuccess<{ userId: number }>>("/admin/staff", input);
+  return response.data.data.userId;
+}
+export async function createPatient(input: PatientInput) {
+  const response = await apiClient.post<ApiSuccess<{ userId: number }>>("/admin/patients", input);
+  return response.data.data.userId;
+}
+export async function getOrganizations(): Promise<Organization[]> {
+  const response = await apiClient.get<
+    ApiSuccess<{
+      organizations: Organization[];
+    }>
+  >("/admin/organizations");
 
-  return response
-    .data
-    .data
-    .organizations;
+  return response.data.data.organizations;
 }
 
 export async function getManagedOrganizations(): Promise<Organization[]> {
@@ -174,7 +260,13 @@ export async function getUserDetails(userId: number): Promise<AdminUserDetails> 
   return response.data.data;
 }
 
-export async function updateUserProfile(userId: number, input: UpdateUserProfileInput): Promise<AdminUserDetails> {
-  const response = await apiClient.patch<ApiSuccess<AdminUserDetails>>(`/admin/users/${userId}/profile`, input);
+export async function updateUserProfile(
+  userId: number,
+  input: UpdateUserProfileInput
+): Promise<AdminUserDetails> {
+  const response = await apiClient.patch<ApiSuccess<AdminUserDetails>>(
+    `/admin/users/${userId}/profile`,
+    input
+  );
   return response.data.data;
 }

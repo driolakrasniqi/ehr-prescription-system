@@ -1,17 +1,12 @@
 import { app } from "./app.js";
 import { env } from "./config/env.js";
-import {
-  checkDatabaseConnection,
-  databasePool
-} from "./config/database.js";
+import { checkDatabaseConnection, databasePool } from "./config/database.js";
 
 async function startServer(): Promise<void> {
   try {
     const database = await checkDatabaseConnection();
 
-    console.log(
-      `Connected to ${database.databaseName}, MySQL ${database.databaseVersion}`
-    );
+    console.log(`Connected to ${database.databaseName}, MySQL ${database.databaseVersion}`);
 
     const server = app.listen(env.PORT, () => {
       console.log(`API running at http://localhost:${env.PORT}`);

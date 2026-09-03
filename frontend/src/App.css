@@ -1,3 +1,25 @@
-.app-loading { min-height: 100svh; display: grid; place-items: center; background: var(--surface-soft); color: var(--ink-muted); text-align: center; }
-.app-loading__mark { display: grid; place-items: center; width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 18px; background: var(--navy); color: var(--mint); animation: breathe 1.35s ease-in-out infinite; }
-@keyframes breathe { 50% { transform: scale(.94); opacity: .72; } }
+.app-loading {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  background: var(--surface-soft);
+  color: var(--ink-muted);
+  text-align: center;
+}
+.app-loading__mark {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 18px;
+  background: var(--navy);
+  color: var(--mint);
+  animation: breathe 1.35s ease-in-out infinite;
+}
+@keyframes breathe {
+  50% {
+    transform: scale(0.94);
+    opacity: 0.72;
+  }
+}

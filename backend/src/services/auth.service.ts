@@ -4,10 +4,7 @@ import bcrypt from "bcryptjs";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/errors.js";
 import { signAccessToken } from "../utils/jwt.js";
-import {
-  generateRefreshToken,
-  hashRefreshToken
-} from "../utils/tokens.js";
+import { generateRefreshToken, hashRefreshToken } from "../utils/tokens.js";
 
 import * as authRepository from "../repositories/auth.repository.js";
 import { writeAuditEvent } from "../repositories/audit.repository.js";
@@ -23,12 +20,7 @@ import type { SafeUser } from "../types/auth.types.js";
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const ACCOUNT_LOCK_DURATION_MS = 15 * 60 * 1000;
 
-const REFRESH_TOKEN_TTL_MS =
-  env.REFRESH_TOKEN_TTL_DAYS *
-  24 *
-  60 *
-  60 *
-  1000;
+const REFRESH_TOKEN_TTL_MS = env.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
 
 export interface RequestMeta {
   ipAddress: string | null;
@@ -52,10 +44,7 @@ export interface RegisterResult {
   user: SafeUser;
 }
 
-function toSafeUser(
-  user: UserAuthRecord,
-  statusOverride?: SafeUser["status"]
-): SafeUser {
+function toSafeUser(user: UserAuthRecord, statusOverride?: SafeUser["status"]): SafeUser {
   return {
     id: user.id,
     email: user.email,
@@ -66,11 +55,7 @@ function toSafeUser(
 }
 
 function invalidCredentialsError(): AppError {
-  return new AppError(
-    401,
-    "INVALID_CREDENTIALS",
-    "The email or password is incorrect."
-  );
+  return new AppError(401, "INVALID_CREDENTIALS", "The email or password is incorrect.");
 }
 
 function accountLockedError(): AppError {
@@ -85,49 +70,32 @@ export async function registerPatient(
   input: RegisterInput,
   meta: RequestMeta
 ): Promise<RegisterResult> {
-  const normalizedEmail = input.email
-    .toLowerCase()
-    .trim();
+  const normalizedEmail = input.email.toLowerCase().trim();
 
-  const existingUser =
-    await authRepository.findUserByEmail(
-      normalizedEmail
-    );
+  const existingUser = await authRepository.findUserByEmail(normalizedEmail);
 
   if (existingUser) {
-    throw new AppError(
-      409,
-      "CONFLICT",
-      "An account with this email address already exists."
-    );
+    throw new AppError(409, "CONFLICT", "An account with this email address already exists.");
   }
 
-  const passwordHash = await bcrypt.hash(
-    input.password,
-    env.BCRYPT_SALT_ROUNDS
-  );
+  const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
 
-  const displayName =
-    `${input.firstName.trim()} ${input.lastName.trim()}`;
+  const displayName = `${input.firstName.trim()} ${input.lastName.trim()}`;
 
-  const patientNumber =
-    `PAT-${randomBytes(6)
-      .toString("hex")
-      .toUpperCase()}`;
+  const patientNumber = `PAT-${randomBytes(6).toString("hex").toUpperCase()}`;
 
   try {
-    const userId =
-      await authRepository.createPatientAccount({
-        email: normalizedEmail,
-        passwordHash,
-        displayName,
-        patientNumber,
-        firstName: input.firstName.trim(),
-        lastName: input.lastName.trim(),
-        dateOfBirth: input.dateOfBirth,
-        sex: input.sex,
-        phone: input.phone?.trim() || null
-      });
+    const userId = await authRepository.createPatientAccount({
+      email: normalizedEmail,
+      passwordHash,
+      displayName,
+      patientNumber,
+      firstName: input.firstName.trim(),
+      lastName: input.lastName.trim(),
+      dateOfBirth: input.dateOfBirth,
+      sex: input.sex,
+      phone: input.phone?.trim() || null
+    });
 
     await writeAuditEvent({
       actorUserId: userId,
@@ -155,29 +123,17 @@ export async function registerPatient(
       "errno" in error &&
       (error as { errno?: number }).errno === 1062
     ) {
-      throw new AppError(
-        409,
-        "CONFLICT",
-        "An account with these details already exists."
-      );
+      throw new AppError(409, "CONFLICT", "An account with these details already exists.");
     }
 
     throw error;
   }
 }
 
-export async function login(
-  input: LoginInput,
-  meta: RequestMeta
-): Promise<LoginResult> {
-  const normalizedEmail = input.email
-    .toLowerCase()
-    .trim();
+export async function login(input: LoginInput, meta: RequestMeta): Promise<LoginResult> {
+  const normalizedEmail = input.email.toLowerCase().trim();
 
-  const user =
-    await authRepository.findUserByEmail(
-      normalizedEmail
-    );
+  const user = await authRepository.findUserByEmail(normalizedEmail);
 
   if (!user) {
     // Use the same error as an incorrect password so the login
@@ -204,22 +160,15 @@ export async function login(
   }
 
   if (user.status === "PENDING") {
-    throw new AppError(
-      401,
-      "ACCOUNT_NOT_ACTIVE",
-      "This account has not been activated yet."
-    );
+    throw new AppError(401, "ACCOUNT_NOT_ACTIVE", "This account has not been activated yet.");
   }
 
   // If a previous lock has expired, the failed-login counter
   // starts again from zero.
-  let failedLoginCount =
-    user.failed_login_count;
+  let failedLoginCount = user.failed_login_count;
 
   if (user.status === "LOCKED") {
-    const lockStillActive =
-      user.locked_until !== null &&
-      user.locked_until.getTime() > Date.now();
+    const lockStillActive = user.locked_until !== null && user.locked_until.getTime() > Date.now();
 
     if (lockStillActive) {
       throw accountLockedError();
@@ -228,26 +177,14 @@ export async function login(
     failedLoginCount = 0;
   }
 
-  const passwordMatches =
-    await bcrypt.compare(
-      input.password,
-      user.password_hash
-    );
+  const passwordMatches = await bcrypt.compare(input.password, user.password_hash);
 
   if (!passwordMatches) {
-    const nextFailedCount =
-      failedLoginCount + 1;
+    const nextFailedCount = failedLoginCount + 1;
 
-    const shouldLock =
-      nextFailedCount >=
-      MAX_FAILED_LOGIN_ATTEMPTS;
+    const shouldLock = nextFailedCount >= MAX_FAILED_LOGIN_ATTEMPTS;
 
-    const lockedUntil = shouldLock
-      ? new Date(
-          Date.now() +
-            ACCOUNT_LOCK_DURATION_MS
-        )
-      : null;
+    const lockedUntil = shouldLock ? new Date(Date.now() + ACCOUNT_LOCK_DURATION_MS) : null;
 
     await authRepository.registerFailedLogin(
       user.id,
@@ -259,9 +196,7 @@ export async function login(
     await writeAuditEvent({
       actorUserId: user.id,
       actorRoleCode: user.role_code,
-      action: shouldLock
-        ? "ACCOUNT_LOCKED"
-        : "LOGIN_FAILED",
+      action: shouldLock ? "ACCOUNT_LOCKED" : "LOGIN_FAILED",
       entityType: "USER",
       entityId: user.id,
       result: "DENIED",
@@ -278,26 +213,15 @@ export async function login(
     throw invalidCredentialsError();
   }
 
-  await authRepository.registerSuccessfulLogin(
-    user.id
-  );
+  await authRepository.registerSuccessfulLogin(user.id);
 
-  const accessToken = signAccessToken(
-    user.id,
-    user.role_code,
-    user.token_version
-  );
+  const accessToken = signAccessToken(user.id, user.role_code, user.token_version);
 
-  const refreshToken =
-    generateRefreshToken();
+  const refreshToken = generateRefreshToken();
 
-  const refreshTokenHash =
-    hashRefreshToken(refreshToken);
+  const refreshTokenHash = hashRefreshToken(refreshToken);
 
-  const refreshTokenExpiresAt =
-    new Date(
-      Date.now() + REFRESH_TOKEN_TTL_MS
-    );
+  const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
   await authRepository.insertRefreshToken({
     userId: user.id,
@@ -330,47 +254,28 @@ export async function refresh(
   meta: RequestMeta
 ): Promise<RefreshResult> {
   if (!rawRefreshToken) {
-    throw new AppError(
-      401,
-      "UNAUTHENTICATED",
-      "No refresh token was provided."
-    );
+    throw new AppError(401, "UNAUTHENTICATED", "No refresh token was provided.");
   }
 
-  const tokenHash =
-    hashRefreshToken(rawRefreshToken);
+  const tokenHash = hashRefreshToken(rawRefreshToken);
 
-  const record =
-    await authRepository.findRefreshTokenByHash(
-      tokenHash
-    );
+  const record = await authRepository.findRefreshTokenByHash(tokenHash);
 
   if (!record) {
-    throw new AppError(
-      401,
-      "UNAUTHENTICATED",
-      "The refresh token is invalid."
-    );
+    throw new AppError(401, "UNAUTHENTICATED", "The refresh token is invalid.");
   }
 
   if (record.revoked_at !== null) {
     // A revoked token being reused can indicate token theft.
     // Revoke every refresh token and invalidate existing
     // access tokens for the associated account.
-    await authRepository
-      .revokeAllRefreshTokensForUser(
-        record.user_id
-      );
+    await authRepository.revokeAllRefreshTokensForUser(record.user_id);
 
-    await authRepository
-      .incrementTokenVersion(
-        record.user_id
-      );
+    await authRepository.incrementTokenVersion(record.user_id);
 
     await writeAuditEvent({
       actorUserId: record.user_id,
-      action:
-        "REFRESH_TOKEN_REUSE_DETECTED",
+      action: "REFRESH_TOKEN_REUSE_DETECTED",
       entityType: "USER",
       entityId: record.user_id,
       result: "DENIED",
@@ -384,26 +289,13 @@ export async function refresh(
     );
   }
 
-  if (
-    record.expires_at.getTime() <=
-    Date.now()
-  ) {
-    throw new AppError(
-      401,
-      "UNAUTHENTICATED",
-      "The refresh token has expired."
-    );
+  if (record.expires_at.getTime() <= Date.now()) {
+    throw new AppError(401, "UNAUTHENTICATED", "The refresh token has expired.");
   }
 
-  const user =
-    await authRepository.findUserById(
-      record.user_id
-    );
+  const user = await authRepository.findUserById(record.user_id);
 
-  if (
-    !user ||
-    user.status !== "ACTIVE"
-  ) {
+  if (!user || user.status !== "ACTIVE") {
     throw new AppError(
       401,
       "UNAUTHENTICATED",
@@ -411,16 +303,11 @@ export async function refresh(
     );
   }
 
-  const newRefreshToken =
-    generateRefreshToken();
+  const newRefreshToken = generateRefreshToken();
 
-  const newTokenHash =
-    hashRefreshToken(newRefreshToken);
+  const newTokenHash = hashRefreshToken(newRefreshToken);
 
-  const newExpiresAt =
-    new Date(
-      Date.now() + REFRESH_TOKEN_TTL_MS
-    );
+  const newExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
 
   await authRepository.rotateRefreshToken({
     oldTokenId: record.id,
@@ -431,11 +318,7 @@ export async function refresh(
     userAgent: meta.userAgent
   });
 
-  const accessToken = signAccessToken(
-    user.id,
-    user.role_code,
-    user.token_version
-  );
+  const accessToken = signAccessToken(user.id, user.role_code, user.token_version);
 
   await writeAuditEvent({
     actorUserId: user.id,
@@ -462,20 +345,12 @@ export async function logout(
     return;
   }
 
-  const tokenHash =
-    hashRefreshToken(rawRefreshToken);
+  const tokenHash = hashRefreshToken(rawRefreshToken);
 
-  const record =
-    await authRepository.findRefreshTokenByHash(
-      tokenHash
-    );
+  const record = await authRepository.findRefreshTokenByHash(tokenHash);
 
-  if (
-    record &&
-    record.revoked_at === null
-  ) {
-    await authRepository
-      .revokeRefreshTokenById(record.id);
+  if (record && record.revoked_at === null) {
+    await authRepository.revokeRefreshTokenById(record.id);
 
     await writeAuditEvent({
       actorUserId: record.user_id,
@@ -488,27 +363,16 @@ export async function logout(
   }
 }
 
-export async function logoutAll(
-  userId: number,
-  meta: RequestMeta
-): Promise<void> {
-  const user =
-    await authRepository.findUserById(
-      userId
-    );
+export async function logoutAll(userId: number, meta: RequestMeta): Promise<void> {
+  const user = await authRepository.findUserById(userId);
 
-  await authRepository
-    .revokeAllRefreshTokensForUser(
-      userId
-    );
+  await authRepository.revokeAllRefreshTokensForUser(userId);
 
-  await authRepository
-    .incrementTokenVersion(userId);
+  await authRepository.incrementTokenVersion(userId);
 
   await writeAuditEvent({
     actorUserId: userId,
-    actorRoleCode:
-      user?.role_code ?? null,
+    actorRoleCode: user?.role_code ?? null,
     action: "LOGOUT_ALL",
     entityType: "USER",
     entityId: userId,
@@ -522,48 +386,24 @@ export async function changePassword(
   input: ChangePasswordInput,
   meta: RequestMeta
 ): Promise<void> {
-  const user =
-    await authRepository.findUserById(
-      userId
-    );
+  const user = await authRepository.findUserById(userId);
 
-  if (
-    !user ||
-    user.status !== "ACTIVE"
-  ) {
-    throw new AppError(
-      401,
-      "UNAUTHENTICATED",
-      "The account is not active."
-    );
+  if (!user || user.status !== "ACTIVE") {
+    throw new AppError(401, "UNAUTHENTICATED", "The account is not active.");
   }
 
-  const currentPasswordMatches =
-    await bcrypt.compare(
-      input.currentPassword,
-      user.password_hash
-    );
+  const currentPasswordMatches = await bcrypt.compare(input.currentPassword, user.password_hash);
 
   if (!currentPasswordMatches) {
     throw invalidCredentialsError();
   }
 
-  const passwordHash =
-    await bcrypt.hash(
-      input.newPassword,
-      env.BCRYPT_SALT_ROUNDS
-    );
+  const passwordHash = await bcrypt.hash(input.newPassword, env.BCRYPT_SALT_ROUNDS);
 
   // updatePassword also increments token_version.
-  await authRepository.updatePassword(
-    userId,
-    passwordHash
-  );
+  await authRepository.updatePassword(userId, passwordHash);
 
-  await authRepository
-    .revokeAllRefreshTokensForUser(
-      userId
-    );
+  await authRepository.revokeAllRefreshTokensForUser(userId);
 
   await writeAuditEvent({
     actorUserId: userId,
@@ -576,20 +416,11 @@ export async function changePassword(
   });
 }
 
-export async function getCurrentUser(
-  userId: number
-): Promise<SafeUser> {
-  const user =
-    await authRepository.findUserById(
-      userId
-    );
+export async function getCurrentUser(userId: number): Promise<SafeUser> {
+  const user = await authRepository.findUserById(userId);
 
   if (!user) {
-    throw new AppError(
-      401,
-      "UNAUTHENTICATED",
-      "The authenticated user no longer exists."
-    );
+    throw new AppError(401, "UNAUTHENTICATED", "The authenticated user no longer exists.");
   }
 
   return toSafeUser(user);

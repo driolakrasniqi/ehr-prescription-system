@@ -2,7 +2,6 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   Activity,
-  Bell,
   Building2,
   HeartPulse,
   LayoutDashboard,
@@ -43,10 +42,11 @@ function getPageTitle(pathname: string, role: UserRole): string {
     return "My profile";
   }
 
-  if (
-    pathname === "/patient" ||
-    pathname === "/patient/dashboard"
-  ) {
+  if (pathname === "/doctor/patients") {
+    return "Patient care";
+  }
+
+  if (pathname === "/patient" || pathname === "/patient/dashboard") {
     return "My health summary";
   }
 
@@ -93,9 +93,7 @@ export function AppShell() {
 
   return (
     <div className="shell">
-      <aside
-        className={`sidebar ${menuOpen ? "sidebar--open" : ""}`}
-      >
+      <aside className={`sidebar ${menuOpen ? "sidebar--open" : ""}`}>
         <div className="sidebar__brand">
           <span>
             <HeartPulse size={24} />
@@ -116,18 +114,13 @@ export function AppShell() {
           <X size={20} />
         </button>
 
-        <nav
-          className="sidebar__nav"
-          onClick={() => setMenuOpen(false)}
-        >
+        <nav className="sidebar__nav" onClick={() => setMenuOpen(false)}>
           <p>Workspace</p>
 
-          {user.role !== "PATIENT" && (
-            <NavLink to="/" end>
-              <LayoutDashboard size={19} />
-              Overview
-            </NavLink>
-          )}
+          <NavLink to="/" end>
+            <LayoutDashboard size={19} />
+            Overview
+          </NavLink>
 
           {user.role === "ADMIN" && (
             <>
@@ -149,11 +142,10 @@ export function AppShell() {
           )}
 
           {user.role === "DOCTOR" && (
-            <span className="sidebar__soon">
+            <NavLink to="/doctor/patients">
               <Stethoscope size={19} />
               Patients
-              <small>Next module</small>
-            </span>
+            </NavLink>
           )}
 
           {user.role === "PHARMACIST" && (
@@ -187,9 +179,7 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar__profile">
-          <div className="avatar">
-            {initials}
-          </div>
+          <div className="avatar">{initials}</div>
 
           <div>
             <strong>{user.displayName ?? "Account"}</strong>
@@ -235,21 +225,12 @@ export function AppShell() {
           </div>
 
           <div className="topbar__actions">
-            <button
-              type="button"
-              aria-label="Notifications"
-            >
-              <Bell size={19} />
-            </button>
-
             <div className="topbar__trust">
               <ShieldCheck size={17} />
               <span>Secure session</span>
             </div>
 
-            <div className="avatar avatar--small">
-              {initials}
-            </div>
+            <div className="avatar avatar--small">{initials}</div>
           </div>
         </header>
 

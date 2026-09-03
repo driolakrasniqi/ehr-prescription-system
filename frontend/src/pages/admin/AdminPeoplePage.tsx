@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type FormEvent,
-  type ReactNode
-} from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { isAxiosError } from "axios";
 import {
   AlertCircle,
@@ -92,19 +85,14 @@ function getErrorMessage(error: unknown): string {
       };
     };
 
-    return (
-      data?.error?.message ??
-      "The request could not be completed."
-    );
+    return data?.error?.message ?? "The request could not be completed.";
   }
 
   return "The request could not be completed.";
 }
 
 function convertDetailsToProfile(
-  details: Awaited<
-    ReturnType<typeof getUserDetails>
-  >
+  details: Awaited<ReturnType<typeof getUserDetails>>
 ): UpdateUserProfileInput {
   const { account, profile } = details;
 
@@ -117,19 +105,14 @@ function convertDetailsToProfile(
       dateOfBirth: profile.dateOfBirth,
       sex: profile.sex,
       bloodType: profile.bloodType,
-      maritalStatus:
-        profile.maritalStatus,
-      smokingStatus:
-        profile.smokingStatus,
+      maritalStatus: profile.maritalStatus,
+      smokingStatus: profile.smokingStatus,
       occupation: profile.occupation ?? "",
       phone: profile.phone ?? "",
-      addressLine1:
-        profile.addressLine1 ?? "",
-      addressLine2:
-        profile.addressLine2 ?? "",
+      addressLine1: profile.addressLine1 ?? "",
+      addressLine2: profile.addressLine2 ?? "",
       city: profile.city ?? "",
-      postalCode:
-        profile.postalCode ?? "",
+      postalCode: profile.postalCode ?? "",
       countryCode: profile.countryCode
     };
   }
@@ -137,29 +120,22 @@ function convertDetailsToProfile(
   if (profile.type === "PRACTITIONER") {
     return {
       profileType: "PRACTITIONER",
-      role: account.role as
-        | "DOCTOR"
-        | "PHARMACIST",
+      role: account.role as "DOCTOR" | "PHARMACIST",
       email: account.email,
       firstName: profile.firstName,
       lastName: profile.lastName,
-      licenseNumber:
-        profile.licenseNumber,
-      specialty:
-        profile.specialty ?? "",
+      licenseNumber: profile.licenseNumber,
+      specialty: profile.specialty ?? "",
       phone: profile.phone ?? "",
-      organizationId:
-        profile.organizationId ?? 0,
-      positionTitle:
-        profile.positionTitle ?? ""
+      organizationId: profile.organizationId ?? 0,
+      positionTitle: profile.positionTitle ?? ""
     };
   }
 
   return {
     profileType: "ACCOUNT",
     email: account.email,
-    displayName:
-      account.displayName ?? ""
+    displayName: account.displayName ?? ""
   };
 }
 
@@ -168,84 +144,54 @@ function formatRole(role: Filter): string {
     return "All people";
   }
 
-  return (
-    role.charAt(0) +
-    role.slice(1).toLowerCase()
-  );
+  return role.charAt(0) + role.slice(1).toLowerCase();
 }
 
 export function AdminPeoplePage() {
-  const [users, setUsers] =
-    useState<AdminUser[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
 
-  const [organizations, setOrganizations] =
-    useState<Organization[]>([]);
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
 
-  const [filter, setFilter] =
-    useState<Filter>("ALL");
+  const [filter, setFilter] = useState<Filter>("ALL");
 
-  const [query, setQuery] =
-    useState("");
+  const [query, setQuery] = useState("");
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [busy, setBusy] =
-    useState(false);
+  const [busy, setBusy] = useState(false);
 
-  const [error, setError] =
-    useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const [notice, setNotice] =
-    useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const [addOpen, setAddOpen] =
-    useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
-  const [addKind, setAddKind] =
-    useState<AddKind>("PATIENT");
+  const [addKind, setAddKind] = useState<AddKind>("PATIENT");
 
-  const [patient, setPatient] =
-    useState<PatientInput>(
-      createEmptyPatient
-    );
+  const [patient, setPatient] = useState<PatientInput>(createEmptyPatient);
 
-  const [staff, setStaff] =
-    useState<StaffInput>(
-      createEmptyStaff
-    );
+  const [staff, setStaff] = useState<StaffInput>(createEmptyStaff);
 
-  const [editing, setEditing] =
-    useState<EditingState | null>(null);
+  const [editing, setEditing] = useState<EditingState | null>(null);
 
-  const load = useCallback(
-    async (): Promise<void> => {
-      setLoading(true);
-      setError(null);
+  const load = useCallback(async (): Promise<void> => {
+    setLoading(true);
+    setError(null);
 
-      try {
-        const [
-          nextUsers,
-          nextOrganizations
-        ] = await Promise.all([
-          getUsers(),
-          getManagedOrganizations()
-        ]);
+    try {
+      const [nextUsers, nextOrganizations] = await Promise.all([
+        getUsers(),
+        getManagedOrganizations()
+      ]);
 
-        setUsers(nextUsers);
-        setOrganizations(
-          nextOrganizations
-        );
-      } catch (loadError) {
-        setError(
-          getErrorMessage(loadError)
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
+      setUsers(nextUsers);
+      setOrganizations(nextOrganizations);
+    } catch (loadError) {
+      setError(getErrorMessage(loadError));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -262,17 +208,16 @@ export function AdminPeoplePage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const filteredUsers = useMemo(() => {
-    const search =
-      query.trim().toLowerCase();
+    const search = query.trim().toLowerCase();
 
     return users.filter((user) => {
-      const roleMatches =
-        filter === "ALL" ||
-        user.role_code === filter;
+      const roleMatches = filter === "ALL" || user.role_code === filter;
 
       if (!roleMatches) {
         return false;
@@ -297,30 +242,21 @@ export function AdminPeoplePage() {
     });
   }, [filter, query, users]);
 
-  const availableOrganizations =
-    useMemo(() => {
-      const requiredType =
-        staff.role === "DOCTOR"
-          ? "CLINIC"
-          : "PHARMACY";
+  const availableOrganizations = useMemo(() => {
+    const requiredType = staff.role === "DOCTOR" ? "CLINIC" : "PHARMACY";
 
-      return organizations.filter(
-        (organization) =>
-          organization.organizationType ===
-          requiredType && organization.status === "ACTIVE"
-      );
-    }, [organizations, staff.role]);
+    return organizations.filter(
+      (organization) =>
+        organization.organizationType === requiredType && organization.status === "ACTIVE"
+    );
+  }, [organizations, staff.role]);
 
-  function getRoleCount(
-    role: Filter
-  ): number {
+  function getRoleCount(role: Filter): number {
     if (role === "ALL") {
       return users.length;
     }
 
-    return users.filter(
-      (user) => user.role_code === role
-    ).length;
+    return users.filter((user) => user.role_code === role).length;
   }
 
   function resetAddPersonForm(): void {
@@ -345,28 +281,20 @@ export function AdminPeoplePage() {
     resetAddPersonForm();
   }
 
-  async function openEdit(
-    user: AdminUser
-  ): Promise<void> {
+  async function openEdit(user: AdminUser): Promise<void> {
     setBusy(true);
     setError(null);
     setNotice(null);
 
     try {
-      const details =
-        await getUserDetails(user.id);
+      const details = await getUserDetails(user.id);
 
       setEditing({
         user,
-        profile:
-          convertDetailsToProfile(
-            details
-          )
+        profile: convertDetailsToProfile(details)
       });
     } catch (loadError) {
-      setError(
-        getErrorMessage(loadError)
-      );
+      setError(getErrorMessage(loadError));
     } finally {
       setBusy(false);
     }
@@ -380,9 +308,7 @@ export function AdminPeoplePage() {
     setEditing(null);
   }
 
-  async function saveProfile(
-    event: FormEvent<HTMLFormElement>
-  ): Promise<void> {
+  async function saveProfile(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
     if (!editing) {
@@ -394,30 +320,21 @@ export function AdminPeoplePage() {
     setNotice(null);
 
     try {
-      await updateUserProfile(
-        editing.user.id,
-        editing.profile
-      );
+      await updateUserProfile(editing.user.id, editing.profile);
 
       setEditing(null);
 
-      setNotice(
-        "Person profile updated successfully."
-      );
+      setNotice("Person profile updated successfully.");
 
       await load();
     } catch (saveError) {
-      setError(
-        getErrorMessage(saveError)
-      );
+      setError(getErrorMessage(saveError));
     } finally {
       setBusy(false);
     }
   }
 
-  async function addPerson(
-    event: FormEvent<HTMLFormElement>
-  ): Promise<void> {
+  async function addPerson(event: FormEvent<HTMLFormElement>): Promise<void> {
     event.preventDefault();
 
     const createdKind = addKind;
@@ -444,9 +361,7 @@ export function AdminPeoplePage() {
 
       await load();
     } catch (saveError) {
-      setError(
-        getErrorMessage(saveError)
-      );
+      setError(getErrorMessage(saveError));
     } finally {
       setBusy(false);
     }
@@ -460,69 +375,39 @@ export function AdminPeoplePage() {
 
           <h2>People Directory</h2>
 
-          <p>
-            Complete personal and
-            professional records, organized
-            by role.
-          </p>
+          <p>Complete personal and professional records, organized by role.</p>
         </div>
 
-        <button
-          type="button"
-          onClick={openAddPersonDialog}
-        >
+        <button type="button" onClick={openAddPersonDialog}>
           <Plus size={17} />
-
           Add person
         </button>
       </section>
 
       {notice && (
-        <Notice
-          kind="success"
-          close={() => setNotice(null)}
-        >
+        <Notice kind="success" close={() => setNotice(null)}>
           {notice}
         </Notice>
       )}
 
       {error && (
-        <Notice
-          kind="error"
-          close={() => setError(null)}
-        >
+        <Notice kind="error" close={() => setError(null)}>
           {error}
         </Notice>
       )}
 
       <section className="people-toolbar">
         <div className="role-tabs">
-          {(
-            [
-              "ALL",
-              "PATIENT",
-              "DOCTOR",
-              "PHARMACIST",
-              "ADMIN"
-            ] as Filter[]
-          ).map((role) => (
+          {(["ALL", "PATIENT", "DOCTOR", "PHARMACIST", "ADMIN"] as Filter[]).map((role) => (
             <button
               type="button"
               key={role}
-              className={
-                filter === role
-                  ? "active"
-                  : ""
-              }
-              onClick={() =>
-                setFilter(role)
-              }
+              className={filter === role ? "active" : ""}
+              onClick={() => setFilter(role)}
             >
               {formatRole(role)}
 
-              <span>
-                {getRoleCount(role)}
-              </span>
+              <span>{getRoleCount(role)}</span>
             </button>
           ))}
         </div>
@@ -532,9 +417,7 @@ export function AdminPeoplePage() {
 
           <input
             value={query}
-            onChange={(event) =>
-              setQuery(event.target.value)
-            }
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Search people"
             aria-label="Search people"
           />
@@ -545,45 +428,26 @@ export function AdminPeoplePage() {
             disabled={loading}
             aria-label="Refresh directory"
           >
-            <RefreshCw
-              className={
-                loading
-                  ? "spin"
-                  : undefined
-              }
-              size={16}
-            />
+            <RefreshCw className={loading ? "spin" : undefined} size={16} />
           </button>
         </div>
       </section>
 
       {loading ? (
         <div className="people-state">
-          <LoaderCircle
-            className="spin"
-          />
-
+          <LoaderCircle className="spin" />
           Loading people…
         </div>
       ) : (
         <>
           <section className="people-grid">
             {filteredUsers.map((user) => (
-              <PersonCard
-                key={user.id}
-                user={user}
-                busy={busy}
-                edit={() =>
-                  void openEdit(user)
-                }
-              />
+              <PersonCard key={user.id} user={user} busy={busy} edit={() => void openEdit(user)} />
             ))}
           </section>
 
           {filteredUsers.length === 0 && (
-            <div className="people-state">
-              No people match this filter.
-            </div>
+            <div className="people-state">No people match this filter.</div>
           )}
         </>
       )}
@@ -599,59 +463,35 @@ export function AdminPeoplePage() {
             <div className="kind-switch">
               <button
                 type="button"
-                className={
-                  addKind === "PATIENT"
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setAddKind("PATIENT")
-                }
+                className={addKind === "PATIENT" ? "active" : ""}
+                onClick={() => setAddKind("PATIENT")}
               >
                 <UserRound />
-
                 Patient
               </button>
 
               <button
                 type="button"
-                className={
-                  addKind === "CLINICAL"
-                    ? "active"
-                    : ""
-                }
-                onClick={() =>
-                  setAddKind("CLINICAL")
-                }
+                className={addKind === "CLINICAL" ? "active" : ""}
+                onClick={() => setAddKind("CLINICAL")}
               >
                 <ClipboardPlus />
-
                 Clinical professional
               </button>
             </div>
 
             {addKind === "PATIENT" ? (
-              <PatientFields
-                value={patient}
-                change={setPatient}
-                showPassword
-              />
+              <PatientFields value={patient} change={setPatient} showPassword />
             ) : (
               <StaffFields
                 value={staff}
                 change={setStaff}
-                organizations={
-                  availableOrganizations
-                }
+                organizations={availableOrganizations}
                 showPassword
               />
             )}
 
-            <ModalFooter
-              busy={busy}
-              cancel={closeAddPersonDialog}
-              label="Create person"
-            />
+            <ModalFooter busy={busy} cancel={closeAddPersonDialog} label="Create person" />
           </form>
         </Modal>
       )}
@@ -660,10 +500,7 @@ export function AdminPeoplePage() {
         <Modal
           title="Edit person"
           eyebrow="PERSON PROFILE"
-          note={`${
-            editing.user.display_name ??
-            editing.user.email
-          } · ${editing.user.role_name}`}
+          note={`${editing.user.display_name ?? editing.user.email} · ${editing.user.role_name}`}
           close={closeEditDialog}
         >
           <form onSubmit={saveProfile}>
@@ -675,16 +512,10 @@ export function AdminPeoplePage() {
                   profile
                 })
               }
-              organizations={
-                organizations
-              }
+              organizations={organizations}
             />
 
-            <ModalFooter
-              busy={busy}
-              cancel={closeEditDialog}
-              label="Save profile"
-            />
+            <ModalFooter busy={busy} cancel={closeEditDialog} label="Save profile" />
           </form>
         </Modal>
       )}
@@ -698,28 +529,15 @@ interface PersonCardProps {
   edit: () => void;
 }
 
-function PersonCard({
-  user,
-  busy,
-  edit
-}: PersonCardProps) {
-  const name =
-    user.display_name ??
-    "Unnamed account";
+function PersonCard({ user, busy, edit }: PersonCardProps) {
+  const name = user.display_name ?? "Unnamed account";
 
-  const avatarText = (
-    user.display_name ??
-    user.email
-  )
-    .charAt(0)
-    .toUpperCase();
+  const avatarText = (user.display_name ?? user.email).charAt(0).toUpperCase();
 
   return (
     <article className="person-card">
       <header>
-        <span
-          className={`person-avatar person-avatar--${user.role_code.toLowerCase()}`}
-        >
+        <span className={`person-avatar person-avatar--${user.role_code.toLowerCase()}`}>
           {avatarText}
         </span>
 
@@ -729,22 +547,17 @@ function PersonCard({
           <small>
             {user.role_name}
             {" · "}
-            {user.profile_number ??
-              "Account profile"}
+            {user.profile_number ?? "Account profile"}
           </small>
         </div>
 
         <span
           className={[
             "profile-state",
-            user.profile_complete
-              ? "profile-state--complete"
-              : "profile-state--missing"
+            user.profile_complete ? "profile-state--complete" : "profile-state--missing"
           ].join(" ")}
         >
-          {user.profile_complete
-            ? "Complete"
-            : "Missing information"}
+          {user.profile_complete ? "Complete" : "Missing information"}
         </span>
       </header>
 
@@ -757,16 +570,7 @@ function PersonCard({
         <div>
           <dt>Phone</dt>
 
-          <dd
-            className={
-              user.phone
-                ? undefined
-                : "missing"
-            }
-          >
-            {user.phone ??
-              "Not provided"}
-          </dd>
+          <dd className={user.phone ? undefined : "missing"}>{user.phone ?? "Not provided"}</dd>
         </div>
 
         <div>
@@ -774,10 +578,7 @@ function PersonCard({
 
           <dd>
             {user.organization_name ??
-              (user.role_code ===
-              "PATIENT"
-                ? "Not applicable"
-                : "Not assigned")}
+              (user.role_code === "PATIENT" ? "Not applicable" : "Not assigned")}
           </dd>
         </div>
 
@@ -788,13 +589,8 @@ function PersonCard({
       </dl>
 
       <footer>
-        <button
-          type="button"
-          onClick={edit}
-          disabled={busy}
-        >
+        <button type="button" onClick={edit} disabled={busy}>
           <Pencil size={15} />
-
           Edit profile
         </button>
       </footer>
@@ -808,11 +604,7 @@ interface PatientFieldsProps {
   showPassword?: boolean;
 }
 
-function PatientFields({
-  value,
-  change,
-  showPassword = false
-}: PatientFieldsProps) {
+function PatientFields({ value, change, showPassword = false }: PatientFieldsProps) {
   return (
     <div className="people-form-grid">
       <Field
@@ -893,9 +685,7 @@ function PatientFields({
         set={(sex) =>
           change({
             ...value,
-            sex: sex as
-              | "FEMALE"
-              | "MALE"
+            sex: sex as "FEMALE" | "MALE"
           })
         }
       />
@@ -1070,8 +860,7 @@ function PatientFields({
         set={(countryCode) =>
           change({
             ...value,
-            countryCode:
-              countryCode.toUpperCase()
+            countryCode: countryCode.toUpperCase()
           })
         }
       />
@@ -1086,12 +875,7 @@ interface StaffFieldsProps {
   showPassword?: boolean;
 }
 
-function StaffFields({
-  value,
-  change,
-  organizations,
-  showPassword = false
-}: StaffFieldsProps) {
+function StaffFields({ value, change, organizations, showPassword = false }: StaffFieldsProps) {
   return (
     <div className="people-form-grid">
       <Field
@@ -1160,9 +944,7 @@ function StaffFields({
         set={(role) =>
           change({
             ...value,
-            role: role as
-              | "DOCTOR"
-              | "PHARMACIST",
+            role: role as "DOCTOR" | "PHARMACIST",
             organizationId: 0
           })
         }
@@ -1216,9 +998,7 @@ function StaffFields({
 
       <Field
         label="Position title"
-        value={
-          value.positionTitle ?? ""
-        }
+        value={value.positionTitle ?? ""}
         required={false}
         set={(positionTitle) =>
           change({
@@ -1233,17 +1013,11 @@ function StaffFields({
 
 interface ProfileFieldsProps {
   value: UpdateUserProfileInput;
-  change: (
-    value: UpdateUserProfileInput
-  ) => void;
+  change: (value: UpdateUserProfileInput) => void;
   organizations: Organization[];
 }
 
-function ProfileFields({
-  value,
-  change,
-  organizations
-}: ProfileFieldsProps) {
+function ProfileFields({ value, change, organizations }: ProfileFieldsProps) {
   if (value.profileType === "ACCOUNT") {
     return (
       <div className="people-form-grid">
@@ -1286,52 +1060,33 @@ function ProfileFields({
           change({
             profileType: "PATIENT",
             email: nextPatient.email,
-            firstName:
-              nextPatient.firstName,
-            lastName:
-              nextPatient.lastName,
-            dateOfBirth:
-              nextPatient.dateOfBirth,
+            firstName: nextPatient.firstName,
+            lastName: nextPatient.lastName,
+            dateOfBirth: nextPatient.dateOfBirth,
             sex: nextPatient.sex,
-            bloodType:
-              nextPatient.bloodType,
-            maritalStatus:
-              nextPatient.maritalStatus,
-            smokingStatus:
-              nextPatient.smokingStatus,
-            occupation:
-              nextPatient.occupation ?? "",
-            phone:
-              nextPatient.phone ?? "",
-            addressLine1:
-              nextPatient.addressLine1 ??
-              "",
-            addressLine2:
-              nextPatient.addressLine2 ??
-              "",
+            bloodType: nextPatient.bloodType,
+            maritalStatus: nextPatient.maritalStatus,
+            smokingStatus: nextPatient.smokingStatus,
+            occupation: nextPatient.occupation ?? "",
+            phone: nextPatient.phone ?? "",
+            addressLine1: nextPatient.addressLine1 ?? "",
+            addressLine2: nextPatient.addressLine2 ?? "",
             city: nextPatient.city ?? "",
-            postalCode:
-              nextPatient.postalCode ?? "",
-            countryCode:
-              nextPatient.countryCode
+            postalCode: nextPatient.postalCode ?? "",
+            countryCode: nextPatient.countryCode
           })
         }
       />
     );
   }
 
-  const requiredOrganizationType =
-    value.role === "DOCTOR"
-      ? "CLINIC"
-      : "PHARMACY";
+  const requiredOrganizationType = value.role === "DOCTOR" ? "CLINIC" : "PHARMACY";
 
-  const availableOrganizations =
-    organizations.filter(
-      (organization) =>
-        organization.organizationType ===
-        requiredOrganizationType &&
-        (organization.status === "ACTIVE" || organization.id === value.organizationId)
-    );
+  const availableOrganizations = organizations.filter(
+    (organization) =>
+      organization.organizationType === requiredOrganizationType &&
+      (organization.status === "ACTIVE" || organization.id === value.organizationId)
+  );
 
   return (
     <div className="people-form-grid">
@@ -1385,9 +1140,7 @@ function ProfileFields({
         set={(role) =>
           change({
             ...value,
-            role: role as
-              | "DOCTOR"
-              | "PHARMACIST",
+            role: role as "DOCTOR" | "PHARMACIST",
             organizationId: 0
           })
         }
@@ -1429,9 +1182,7 @@ function ProfileFields({
       />
 
       <OrganizationSelect
-        organizations={
-          availableOrganizations
-        }
+        organizations={availableOrganizations}
         value={value.organizationId}
         change={(organizationId) =>
           change({
@@ -1462,41 +1213,21 @@ interface OrganizationSelectProps {
   change: (organizationId: number) => void;
 }
 
-function OrganizationSelect({
-  organizations,
-  value,
-  change
-}: OrganizationSelectProps) {
+function OrganizationSelect({ organizations, value, change }: OrganizationSelectProps) {
   return (
     <label className="people-field">
       Organization
+      <select required value={value || ""} onChange={(event) => change(Number(event.target.value))}>
+        <option value="">Select organization</option>
 
-      <select
-        required
-        value={value || ""}
-        onChange={(event) =>
-          change(
-            Number(event.target.value)
-          )
-        }
-      >
-        <option value="">
-          Select organization
-        </option>
-
-        {organizations.map(
-          (organization) => (
-            <option
-              key={organization.id}
-              value={organization.id}
-            >
-              {organization.name}
-              {" — "}
-              {organization.organizationCode}
-              {organization.status !== "ACTIVE" ? ` (${organization.status.toLowerCase()})` : ""}
-            </option>
-          )
-        )}
+        {organizations.map((organization) => (
+          <option key={organization.id} value={organization.id}>
+            {organization.name}
+            {" — "}
+            {organization.organizationCode}
+            {organization.status !== "ACTIVE" ? ` (${organization.status.toLowerCase()})` : ""}
+          </option>
+        ))}
       </select>
     </label>
   );
@@ -1534,9 +1265,7 @@ function Field({
         minLength={minLength}
         maxLength={maxLength}
         autoComplete={autoComplete}
-        onChange={(event) =>
-          set(event.target.value)
-        }
+        onChange={(event) => set(event.target.value)}
       />
     </label>
   );
@@ -1554,27 +1283,14 @@ interface SelectProps {
   set: (value: string) => void;
 }
 
-function Select({
-  label,
-  value,
-  options,
-  set
-}: SelectProps) {
+function Select({ label, value, options, set }: SelectProps) {
   return (
     <label className="people-field">
       {label}
 
-      <select
-        value={value}
-        onChange={(event) =>
-          set(event.target.value)
-        }
-      >
+      <select value={value} onChange={(event) => set(event.target.value)}>
         {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-          >
+          <option key={option.value} value={option.value}>
             {option.label}
           </option>
         ))}
@@ -1591,13 +1307,7 @@ interface ModalProps {
   children: ReactNode;
 }
 
-function Modal({
-  title,
-  eyebrow,
-  note,
-  close,
-  children
-}: ModalProps) {
+function Modal({ title, eyebrow, note, close, children }: ModalProps) {
   return (
     <div className="people-backdrop">
       <section
@@ -1610,18 +1320,12 @@ function Modal({
           <div>
             <span>{eyebrow}</span>
 
-            <h2 id="people-modal-title">
-              {title}
-            </h2>
+            <h2 id="people-modal-title">{title}</h2>
 
             <p>{note}</p>
           </div>
 
-          <button
-            type="button"
-            onClick={close}
-            aria-label="Close dialog"
-          >
+          <button type="button" onClick={close} aria-label="Close dialog">
             <X />
           </button>
         </header>
@@ -1638,33 +1342,15 @@ interface ModalFooterProps {
   label: string;
 }
 
-function ModalFooter({
-  busy,
-  cancel,
-  label
-}: ModalFooterProps) {
+function ModalFooter({ busy, cancel, label }: ModalFooterProps) {
   return (
     <footer className="people-modal-footer">
-      <button
-        type="button"
-        onClick={cancel}
-        disabled={busy}
-      >
+      <button type="button" onClick={cancel} disabled={busy}>
         Cancel
       </button>
 
-      <button
-        type="submit"
-        disabled={busy}
-      >
-        {busy ? (
-          <LoaderCircle
-            className="spin"
-            size={16}
-          />
-        ) : (
-          <Check size={16} />
-        )}
+      <button type="submit" disabled={busy}>
+        {busy ? <LoaderCircle className="spin" size={16} /> : <Check size={16} />}
 
         {label}
       </button>
@@ -1678,33 +1364,17 @@ interface NoticeProps {
   children: ReactNode;
 }
 
-function Notice({
-  kind,
-  close,
-  children
-}: NoticeProps) {
+function Notice({ kind, close, children }: NoticeProps) {
   return (
     <div
       className={`people-notice people-notice--${kind}`}
-      role={
-        kind === "error"
-          ? "alert"
-          : "status"
-      }
+      role={kind === "error" ? "alert" : "status"}
     >
-      {kind === "success" ? (
-        <Check size={17} />
-      ) : (
-        <AlertCircle size={17} />
-      )}
+      {kind === "success" ? <Check size={17} /> : <AlertCircle size={17} />}
 
       <span>{children}</span>
 
-      <button
-        type="button"
-        onClick={close}
-        aria-label="Close notification"
-      >
+      <button type="button" onClick={close} aria-label="Close notification">
         <X size={16} />
       </button>
     </div>

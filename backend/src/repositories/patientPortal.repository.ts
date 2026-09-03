@@ -101,6 +101,7 @@ interface PrescriptionRow extends RowDataPacket {
   validUntil: Date | null;
   doctorName: string;
   organizationName: string;
+  clinicalReason: string | null;
 }
 
 interface PrescriptionItemRow extends RowDataPacket {
@@ -110,6 +111,8 @@ interface PrescriptionItemRow extends RowDataPacket {
   strength: string;
   dosageForm: string;
   frequencyText: string;
+  quantityPrescribed: number;
+  quantityUnit: string;
   instructions: string | null;
 }
 
@@ -119,9 +122,35 @@ interface EncounterRow extends RowDataPacket {
   startedAt: Date;
   encounterType: string;
   chiefComplaint: string | null;
+  symptoms: string | null;
+  examinationFindings: string | null;
+  assessmentSummary: string | null;
+  planSummary: string | null;
   status: string;
   doctorName: string;
   organizationName: string;
+}
+
+interface AllergyRow extends RowDataPacket {
+  id: number;
+  substance: string;
+  category: string;
+  severity: string;
+  reactionDescription: string | null;
+  notes: string | null;
+  recordedAt: Date;
+  doctorName: string;
+}
+
+interface ConditionRow extends RowDataPacket {
+  id: number;
+  conditionName: string;
+  category: string;
+  severity: string;
+  onsetDate: string | null;
+  notes: string | null;
+  diagnosedAt: Date;
+  doctorName: string;
 }
 
 interface AppointmentRow extends RowDataPacket {
@@ -158,21 +187,25 @@ export async function getPatientDashboard(userId: number) {
          WHERE patient_id = ? AND scheduled_start >= UTC_TIMESTAMP(3)
            AND status IN ('BOOKED','CONFIRMED')) AS upcomingAppointments,
        (SELECT COUNT(*) FROM allergies
-         WHERE patient_id = ? AND clinical_status = 'ACTIVE') AS activeAllergies,
+         WHERE patient_id = ? AND clinical_status = 'ACTIVE'
+           AND verification_status <> 'ENTERED_IN_ERROR') AS activeAllergies,
        (SELECT COUNT(*) FROM conditions
-         WHERE patient_id = ? AND clinical_status IN ('ACTIVE','RECURRENCE','RELAPSE')) AS activeConditions`,
+         WHERE patient_id = ? AND clinical_status IN ('ACTIVE','RECURRENCE','RELAPSE')
+           AND verification_status <> 'ENTERED_IN_ERROR') AS activeConditions`,
     [patient.id, patient.id, patient.id, patient.id]
   );
 
   const [prescriptions] = await databasePool.query<PrescriptionRow[]>(
     `SELECT rx.id, rx.prescription_number AS prescriptionNumber, rx.status,
             rx.issued_at AS issuedAt, rx.valid_until AS validUntil,
+            rx.clinical_reason AS clinicalReason,
             CONCAT(d.first_name, ' ', d.last_name) AS doctorName,
             o.name AS organizationName
        FROM prescriptions rx
        JOIN practitioners d ON d.id = rx.doctor_id
        JOIN organizations o ON o.id = rx.organization_id
-      WHERE rx.patient_id = ? AND rx.status <> 'DRAFT'
+      WHERE rx.patient_id = ?
+        AND rx.status IN ('ISSUED','PARTIALLY_DISPENSED','FULLY_DISPENSED','CANCELLED','EXPIRED')
       ORDER BY COALESCE(rx.issued_at, rx.created_at) DESC
       LIMIT 5`,
     [patient.id]
@@ -186,7 +219,9 @@ export async function getPatientDashboard(userId: number) {
       `SELECT prescription_id AS prescriptionId, id,
               medication_name_snapshot AS medicationName,
               strength_snapshot AS strength, dosage_form_snapshot AS dosageForm,
-              frequency_text AS frequencyText, instructions
+              frequency_text AS frequencyText,
+              quantity_prescribed AS quantityPrescribed,
+              quantity_unit AS quantityUnit, instructions
          FROM prescription_items
         WHERE prescription_id IN (${placeholders})
         ORDER BY prescription_id, line_number`,
@@ -198,6 +233,8 @@ export async function getPatientDashboard(userId: number) {
   const [encounters] = await databasePool.query<EncounterRow[]>(
     `SELECT e.id, e.encounter_number AS encounterNumber, e.started_at AS startedAt,
             e.encounter_type AS encounterType, e.chief_complaint AS chiefComplaint,
+            e.symptoms, e.examination_findings AS examinationFindings,
+            e.assessment_summary AS assessmentSummary, e.plan_summary AS planSummary,
             e.status, CONCAT(d.first_name, ' ', d.last_name) AS doctorName,
             o.name AS organizationName
        FROM encounters e
@@ -206,6 +243,33 @@ export async function getPatientDashboard(userId: number) {
       WHERE e.patient_id = ? AND e.status <> 'ENTERED_IN_ERROR'
       ORDER BY e.started_at DESC
       LIMIT 5`,
+    [patient.id]
+  );
+
+  const [allergies] = await databasePool.query<AllergyRow[]>(
+    `SELECT a.id, a.substance, a.category, a.severity,
+            a.reaction_description AS reactionDescription, a.notes,
+            a.created_at AS recordedAt,
+            CONCAT(p.first_name, ' ', p.last_name) AS doctorName
+       FROM allergies a
+       JOIN practitioners p ON p.id = a.recorded_by_practitioner_id
+      WHERE a.patient_id = ? AND a.clinical_status = 'ACTIVE'
+        AND a.verification_status <> 'ENTERED_IN_ERROR'
+      ORDER BY a.created_at DESC`,
+    [patient.id]
+  );
+
+  const [conditions] = await databasePool.query<ConditionRow[]>(
+    `SELECT c.id, c.condition_name AS conditionName, c.category, c.severity,
+            DATE_FORMAT(c.onset_date, '%Y-%m-%d') AS onsetDate,
+            c.notes, c.diagnosed_at AS diagnosedAt,
+            CONCAT(p.first_name, ' ', p.last_name) AS doctorName
+       FROM conditions c
+       JOIN practitioners p ON p.id = c.recorded_by_practitioner_id
+      WHERE c.patient_id = ?
+        AND c.clinical_status IN ('ACTIVE','RECURRENCE','RELAPSE')
+        AND c.verification_status <> 'ENTERED_IN_ERROR'
+      ORDER BY c.diagnosed_at DESC`,
     [patient.id]
   );
 
@@ -238,6 +302,8 @@ export async function getPatientDashboard(userId: number) {
       items: items.filter((item) => item.prescriptionId === prescription.id)
     })),
     recentEncounters: encounters,
-    upcomingAppointments: appointments
+    upcomingAppointments: appointments,
+    activeAllergies: allergies,
+    activeConditions: conditions
   };
 }

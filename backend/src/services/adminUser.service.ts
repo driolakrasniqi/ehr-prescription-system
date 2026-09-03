@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { env } from "../config/env.js";
-import {  randomBytes} from "node:crypto";
+import { randomBytes } from "node:crypto";
 import * as repository from "../repositories/adminUser.repository.js";
 import * as authRepository from "../repositories/auth.repository.js";
 import { writeAuditEvent } from "../repositories/audit.repository.js";
@@ -12,7 +12,7 @@ import type {
   OrganizationStatus,
   UpdateOrganizationInput,
   UpdateUserProfileInput
-} from "../validators/adminUser.validator.js"; 
+} from "../validators/adminUser.validator.js";
 import { AppError } from "../utils/errors.js";
 import type { RequestMeta } from "./auth.service.js";
 
@@ -24,18 +24,21 @@ export async function listRoles() {
   return repository.getActiveRoles();
 }
 
-export async function listOrganizations() { 
-  return repository
-    .getActiveOrganizations();
-} 
+export async function listOrganizations() {
+  return repository.getActiveOrganizations();
+}
 
 export async function listManagedOrganizations() {
   return repository.getAllOrganizations();
 }
 
 function throwOrganizationConflict(error: unknown): never {
-  if (typeof error === "object" && error !== null && "errno" in error &&
-      (error as { errno?: number }).errno === 1062) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "errno" in error &&
+    (error as { errno?: number }).errno === 1062
+  ) {
     throw new AppError(409, "CONFLICT", "Organization code or licence number is already in use.");
   }
   throw error;
@@ -73,7 +76,11 @@ export async function updateOrganization(
   const before = await repository.findOrganizationById(organizationId);
   if (!before) throw new AppError(404, "NOT_FOUND", "Organization not found.");
   if (before.organizationType !== input.organizationType && before.activePractitionerCount > 0) {
-    throw new AppError(409, "CONFLICT", "The organization type cannot change while practitioners are assigned.");
+    throw new AppError(
+      409,
+      "CONFLICT",
+      "The organization type cannot change while practitioners are assigned."
+    );
   }
   try {
     await repository.updateOrganization(organizationId, input);
@@ -109,10 +116,7 @@ export async function changeOrganizationStatus(
     return before;
   }
 
-  const updated = await repository.updateOrganizationStatus(
-    organizationId,
-    status
-  );
+  const updated = await repository.updateOrganizationStatus(organizationId, status);
 
   if (!updated) {
     throw new AppError(404, "NOT_FOUND", "Organization not found.");
@@ -164,24 +168,37 @@ export async function updateProfile(
   const before = await repository.getUserAccountDetails(userId);
   if (!before) throw new AppError(404, "NOT_FOUND", "User not found.");
 
-  const expectedType = before.role === "PATIENT"
-    ? "PATIENT"
-    : before.role === "DOCTOR" || before.role === "PHARMACIST"
-      ? "PRACTITIONER"
-      : "ACCOUNT";
+  const expectedType =
+    before.role === "PATIENT"
+      ? "PATIENT"
+      : before.role === "DOCTOR" || before.role === "PHARMACIST"
+        ? "PRACTITIONER"
+        : "ACCOUNT";
   if (input.profileType !== expectedType) {
     throw new AppError(409, "CONFLICT", "The submitted profile does not match this account.");
   }
   if (userId === currentAdminId && input.profileType === "PRACTITIONER") {
-    throw new AppError(403, "SELF_ROLE_CHANGE_NOT_ALLOWED", "You cannot convert your own administrator access.");
+    throw new AppError(
+      403,
+      "SELF_ROLE_CHANGE_NOT_ALLOWED",
+      "You cannot convert your own administrator access."
+    );
   }
 
   try {
     await repository.updateUserProfile(userId, input, currentAdminId);
   } catch (error) {
-    if (typeof error === "object" && error !== null && "errno" in error &&
-        (error as { errno?: number }).errno === 1062) {
-      throw new AppError(409, "CONFLICT", "Email, licence number, or organization assignment already exists.");
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "errno" in error &&
+      (error as { errno?: number }).errno === 1062
+    ) {
+      throw new AppError(
+        409,
+        "CONFLICT",
+        "Email, licence number, or organization assignment already exists."
+      );
     }
     throw error;
   }
@@ -212,10 +229,7 @@ export async function changeUserRole(
   currentAdminId: number,
   meta: RequestMeta
 ): Promise<void> {
-  if (
-    userId === currentAdminId &&
-    role !== "ADMIN"
-  ) {
+  if (userId === currentAdminId && role !== "ADMIN") {
     throw new AppError(
       403,
       "SELF_ROLE_CHANGE_NOT_ALLOWED",
@@ -223,17 +237,10 @@ export async function changeUserRole(
     );
   }
 
-  const target =
-    await authRepository.findUserById(
-      userId
-    );
+  const target = await authRepository.findUserById(userId);
 
   if (!target) {
-    throw new AppError(
-      404,
-      "NOT_FOUND",
-      "User not found."
-    );
+    throw new AppError(404, "NOT_FOUND", "User not found.");
   }
 
   if (target.role_code === role) {
@@ -252,11 +259,7 @@ export async function changeUserRole(
     );
   }
 
-  const hasProfile =
-    await repository.hasRequiredProfile(
-      userId,
-      role
-    );
+  const hasProfile = await repository.hasRequiredProfile(userId, role);
 
   if (!hasProfile) {
     throw new AppError(
@@ -266,36 +269,21 @@ export async function changeUserRole(
     );
   }
 
-  const roleRecord =
-    await repository.findRoleByCode(role);
+  const roleRecord = await repository.findRoleByCode(role);
 
   if (!roleRecord) {
-    throw new AppError(
-      400,
-      "VALIDATION_ERROR",
-      "The selected role does not exist."
-    );
+    throw new AppError(400, "VALIDATION_ERROR", "The selected role does not exist.");
   }
 
-  const updated =
-    await repository.updateUserRole(
-      userId,
-      roleRecord.id
-    );
+  const updated = await repository.updateUserRole(userId, roleRecord.id);
 
   if (!updated) {
-    throw new AppError(
-      404,
-      "NOT_FOUND",
-      "User not found."
-    );
+    throw new AppError(404, "NOT_FOUND", "User not found.");
   }
 
-  await authRepository
-    .revokeAllRefreshTokensForUser(userId);
+  await authRepository.revokeAllRefreshTokensForUser(userId);
 
-  await authRepository
-    .incrementTokenVersion(userId);
+  await authRepository.incrementTokenVersion(userId);
 
   await writeAuditEvent({
     actorUserId: currentAdminId,
@@ -318,10 +306,7 @@ export async function changeUserStatus(
   currentAdminId: number,
   meta: RequestMeta
 ): Promise<void> {
-  if (
-    userId === currentAdminId &&
-    status !== "ACTIVE"
-  ) {
+  if (userId === currentAdminId && status !== "ACTIVE") {
     throw new AppError(
       403,
       "SELF_STATUS_CHANGE_NOT_ALLOWED",
@@ -329,25 +314,16 @@ export async function changeUserStatus(
     );
   }
 
-  const target =
-    await authRepository.findUserById(
-      userId
-    );
+  const target = await authRepository.findUserById(userId);
 
   if (!target) {
-    throw new AppError(
-      404,
-      "NOT_FOUND",
-      "User not found."
-    );
+    throw new AppError(404, "NOT_FOUND", "User not found.");
   }
 
   if (
     target.role_code === "ADMIN" &&
     status !== "ACTIVE" &&
-    await repository.countActiveAdminsExcluding(
-      userId
-    ) === 0
+    (await repository.countActiveAdminsExcluding(userId)) === 0
   ) {
     throw new AppError(
       409,
@@ -356,26 +332,16 @@ export async function changeUserStatus(
     );
   }
 
-  const updated =
-    await repository.updateUserStatus(
-      userId,
-      status
-    );
+  const updated = await repository.updateUserStatus(userId, status);
 
   if (!updated) {
-    throw new AppError(
-      404,
-      "NOT_FOUND",
-      "User not found."
-    );
+    throw new AppError(404, "NOT_FOUND", "User not found.");
   }
 
   if (status !== "ACTIVE") {
-    await authRepository
-      .revokeAllRefreshTokensForUser(userId);
+    await authRepository.revokeAllRefreshTokensForUser(userId);
 
-    await authRepository
-      .incrementTokenVersion(userId);
+    await authRepository.incrementTokenVersion(userId);
   }
 
   await writeAuditEvent({
@@ -401,29 +367,17 @@ export async function unlockUser(
   const target = await authRepository.findUserById(userId);
 
   if (!target) {
-    throw new AppError(
-      404,
-      "NOT_FOUND",
-      "User not found."
-    );
+    throw new AppError(404, "NOT_FOUND", "User not found.");
   }
 
   if (target.status !== "LOCKED") {
-    throw new AppError(
-      409,
-      "ACCOUNT_NOT_LOCKED",
-      "This account is not locked."
-    );
+    throw new AppError(409, "ACCOUNT_NOT_LOCKED", "This account is not locked.");
   }
 
   const unlocked = await repository.unlockUser(userId);
 
   if (!unlocked) {
-    throw new AppError(
-      409,
-      "ACCOUNT_NOT_LOCKED",
-      "This account is no longer locked."
-    );
+    throw new AppError(409, "ACCOUNT_NOT_LOCKED", "This account is no longer locked.");
   }
 
   await writeAuditEvent({
@@ -442,53 +396,32 @@ export async function createStaff(
   currentAdminId: number,
   meta: RequestMeta
 ): Promise<number> {
-  const normalizedEmail =
-    input.email
-      .trim()
-      .toLowerCase();
+  const normalizedEmail = input.email.trim().toLowerCase();
 
-  const existingUser =
-    await authRepository
-      .findUserByEmail(
-        normalizedEmail
-      );
+  const existingUser = await authRepository.findUserByEmail(normalizedEmail);
 
   if (existingUser) {
-    throw new AppError(
-      409,
-      "CONFLICT",
-      "Email is already in use."
-    );
+    throw new AppError(409, "CONFLICT", "Email is already in use.");
   }
 
-  const passwordHash =
-    await bcrypt.hash(
-      input.password,
-      env.BCRYPT_SALT_ROUNDS
-    );
+  const passwordHash = await bcrypt.hash(input.password, env.BCRYPT_SALT_ROUNDS);
 
-  const practitionerNumber =
-    `PR-${randomBytes(8)
-      .toString("hex")
-      .toUpperCase()}`;
+  const practitionerNumber = `PR-${randomBytes(8).toString("hex").toUpperCase()}`;
 
   try {
-    const userId =
-      await repository
-        .createStaffAccount(
-          {
-            ...input,
-            email: normalizedEmail
-          },
-          passwordHash,
-          practitionerNumber
-        );
+    const userId = await repository.createStaffAccount(
+      {
+        ...input,
+        email: normalizedEmail
+      },
+      passwordHash,
+      practitionerNumber
+    );
 
     await writeAuditEvent({
       actorUserId: currentAdminId,
       actorRoleCode: "ADMIN",
-      action:
-        "STAFF_ACCOUNT_CREATED",
+      action: "STAFF_ACCOUNT_CREATED",
       entityType: "USER",
       entityId: userId,
       result: "SUCCESS",
@@ -554,8 +487,12 @@ export async function createPatient(
     });
     return userId;
   } catch (error) {
-    if (typeof error === "object" && error !== null && "errno" in error &&
-        (error as { errno?: number }).errno === 1062) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "errno" in error &&
+      (error as { errno?: number }).errno === 1062
+    ) {
       throw new AppError(409, "CONFLICT", "Email or patient number already exists.");
     }
     throw error;
