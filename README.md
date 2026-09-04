@@ -147,7 +147,7 @@ http://localhost:5000
 
 ### Backend
 
-Create a separate test database and import `database/schema.sql` into it:
+Create a separate test database and import `database/schema.test.sql` into it:
 
 ```sql
 CREATE DATABASE ehr_eprescription_test

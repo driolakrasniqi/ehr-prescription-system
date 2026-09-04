@@ -1,0 +1,125 @@
+.doctor-visits {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(25, 57, 72, 0.04);
+  overflow: hidden;
+}
+.doctor-visits > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.doctor-visits > header h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.doctor-visits > header p {
+  margin: 4px 0 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.doctor-visits__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: min(360px, 100%);
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  color: var(--ink-muted);
+  background: #f8fafb;
+}
+.doctor-visits__search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+.doctor-visit-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.doctor-visit-list li {
+  border-bottom: 1px solid #edf1f3;
+}
+.doctor-visit-list li:last-child {
+  border-bottom: 0;
+}
+.doctor-visit-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: inherit;
+}
+.doctor-visit-row:hover {
+  background: #f7fbfa;
+}
+.doctor-visit-row__mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--teal);
+  background: #e8f8f6;
+}
+.doctor-visit-row strong,
+.doctor-visit-row small {
+  display: block;
+}
+.doctor-visit-row strong {
+  font-size: 14px;
+}
+.doctor-visit-row small {
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.doctor-visit-row__meta {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  text-align: right;
+}
+.doctor-visit-row__meta em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+}
+.doctor-visit-row__meta span {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #147552;
+  background: #e5f7ef;
+  font-size: 10px;
+  font-weight: 800;
+}
+.doctor-visits .doctor-empty {
+  padding: 36px 20px;
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .doctor-visits > header {
+    display: grid;
+  }
+  .doctor-visit-row,
+  .doctor-visit-row__meta {
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-items: start;
+    text-align: left;
+  }
+  .doctor-visit-row__meta {
+    grid-column: 2;
+  }
+}

@@ -6,7 +6,7 @@
   grid-template-columns:
     minmax(420px, 0.95fr)
     minmax(500px, 1.05fr);
-  background: #f7f9fc;
+  background: var(--surface-soft);
 }
 
 /* =========================
@@ -23,12 +23,7 @@
   overflow: hidden;
   padding: 48px 56px 32px;
   box-sizing: border-box;
-
-  background:
-    radial-gradient(circle at 82% 16%, rgba(31, 183, 166, 0.18), transparent 28%),
-    radial-gradient(circle at 18% 87%, rgba(50, 124, 202, 0.18), transparent 30%),
-    linear-gradient(145deg, #0c3154 0%, #0a3b63 52%, #07516e 100%);
-
+  background: var(--hero);
   color: #ffffff;
 }
 
@@ -85,10 +80,11 @@
 .brand-name {
   margin: 0;
   color: #ffffff;
-  font-size: 17px;
-  line-height: 1.25;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 22px;
+  line-height: 1.15;
   font-weight: 700;
-  letter-spacing: -0.2px;
+  letter-spacing: 0.2px;
 }
 
 .brand-system {
@@ -131,13 +127,13 @@
 
   color: #ffffff;
 
-  font-size: clamp(36px, 4vw, 55px);
+  font-size: clamp(34px, 3.8vw, 50px);
 
-  line-height: 1.06;
+  line-height: 1.12;
 
   font-weight: 650;
 
-  letter-spacing: -2px;
+  letter-spacing: -1.6px;
 }
 
 .brand-message > p {
@@ -162,6 +158,10 @@
   grid-template-columns: 42px 1fr;
   gap: 14px;
   align-items: center;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .brand-feature-icon {
@@ -228,13 +228,21 @@
 
   padding: 48px clamp(35px, 7vw, 110px) 28px;
 
-  background: #f8fafc;
+  background:
+    radial-gradient(circle at 80% 8%, rgba(126, 236, 216, 0.16), transparent 26%),
+    #f6fafb;
 }
 
 .login-form-wrapper {
   width: 100%;
   max-width: 430px;
   margin: auto 0;
+  padding: 32px 30px 28px;
+  border: 1px solid rgba(215, 227, 232, 0.9);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(16px);
 }
 
 .mobile-brand {
@@ -497,18 +505,18 @@
   padding: 0 20px;
 
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
 
-  background: #0d5278;
+  background: linear-gradient(90deg, #0a6b78, #0b8a86);
   color: #ffffff;
 
   font-family: inherit;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 
   cursor: pointer;
 
-  box-shadow: 0 5px 12px rgba(13, 82, 120, 0.15);
+  box-shadow: 0 10px 22px rgba(11, 138, 134, 0.22);
 
   transition:
     background-color 150ms ease,
@@ -517,9 +525,9 @@
 }
 
 .sign-in-button:hover:not(:disabled) {
-  background: #0a4669;
+  background: linear-gradient(90deg, #085a65, #08716e);
 
-  box-shadow: 0 7px 16px rgba(13, 82, 120, 0.2);
+  box-shadow: 0 12px 24px rgba(11, 138, 134, 0.28);
 
   transform: translateY(-1px);
 }
@@ -625,7 +633,7 @@
   }
 
   .login-form-section {
-    padding: 40px;
+    padding: 40px 28px;
   }
 }
 
@@ -651,7 +659,10 @@
   }
 
   .login-form-wrapper {
-    max-width: 430px;
+    padding: 22px 18px 20px;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .mobile-brand {
@@ -666,15 +677,15 @@
     width: 42px;
     height: 42px;
 
-    background: #0d5278;
+    background: #0b8a86;
     color: #70dfd1;
 
-    border-color: rgba(13, 82, 120, 0.2);
+    border-color: rgba(11, 138, 134, 0.2);
   }
 
   .mobile-brand .brand-name {
     color: #17364e;
-    font-size: 15px;
+    font-size: 20px;
   }
 
   .mobile-brand .brand-system {
@@ -716,7 +727,7 @@
 }
 
 .login-signup-link a {
-  color: #0d6689;
+  color: #0b8a86;
 
   font-weight: 600;
 

@@ -1,0 +1,291 @@
+.rx-sheet {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+  padding: 32px 36px 28px;
+  border: 1px solid #d7c7a2;
+  outline: 6px solid #fff;
+  box-shadow:
+    0 0 0 1px #cbb892,
+    0 18px 40px rgba(72, 52, 20, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 245, 0.88), rgba(255, 250, 240, 0.96)),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 27px,
+      rgba(120, 90, 40, 0.03) 28px
+    );
+  color: #2b2418;
+}
+.rx-sheet--empty {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-muted);
+  font-size: 14px;
+}
+.rx-sheet__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #1f4d46;
+}
+.rx-sheet__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.rx-sheet__mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: #fff;
+  background: #0b5c54;
+}
+.rx-sheet__brand strong,
+.rx-sheet__title strong {
+  display: block;
+  font-size: 16px;
+}
+.rx-sheet__brand small,
+.rx-sheet__title span {
+  color: #6d624d;
+  font-size: 11px;
+}
+.rx-sheet__title {
+  text-align: right;
+}
+.rx-sheet__title span {
+  display: block;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #0b5c54;
+}
+.rx-sheet__facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.rx-sheet__facts div {
+  margin: 0;
+}
+.rx-sheet__facts dt {
+  color: #6d624d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.rx-sheet__facts dd {
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+.rx-sheet__parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 18px 0;
+  padding: 14px 0;
+  border-top: 1px solid #e4d7b8;
+  border-bottom: 1px solid #e4d7b8;
+}
+.rx-sheet__parties span {
+  display: block;
+  color: #6d624d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.rx-sheet__parties strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 16px;
+}
+.rx-sheet__parties p {
+  margin: 0;
+  color: #5c5343;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.rx-sheet__flags {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.rx-sheet__allergies,
+.rx-sheet__diagnoses {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 12px;
+}
+.rx-sheet__allergies {
+  border: 1px solid #ead2a8;
+  background: #fff7e8;
+}
+.rx-sheet__diagnoses {
+  border: 1px solid #c9e4dc;
+  background: #eef8f4;
+}
+.rx-sheet__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.rx-sheet__table th {
+  padding: 8px 6px;
+  border-bottom: 2px solid #1f4d46;
+  color: #0b5c54;
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-align: left;
+  text-transform: uppercase;
+}
+.rx-sheet__table td {
+  padding: 11px 6px;
+  border-bottom: 1px solid #eadfca;
+  vertical-align: top;
+}
+.rx-sheet__table td:first-child,
+.rx-sheet__table th:first-child {
+  width: 28px;
+  color: #6d624d;
+}
+.rx-sheet__table td:nth-child(3),
+.rx-sheet__table td:nth-child(4) {
+  white-space: nowrap;
+  font-weight: 700;
+}
+.rx-sheet__table strong,
+.rx-sheet__table small {
+  display: block;
+}
+.rx-sheet__table small {
+  margin-top: 3px;
+  color: #6d624d;
+  font-size: 11px;
+  font-weight: 400;
+}
+.rx-sheet__reason {
+  margin: 14px 0 0;
+  color: #5c5343;
+  font-size: 12px;
+}
+.rx-sheet__sign {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px dashed #cbb892;
+}
+.rx-sheet__sign em {
+  display: block;
+  font-family: "Palatino Linotype", Palatino, "Times New Roman", serif;
+  font-size: 20px;
+  font-style: italic;
+  color: #163f3b;
+}
+.rx-sheet__sign small {
+  color: #6d624d;
+  font-size: 11px;
+}
+.rx-sheet__actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.rx-sheet-stack {
+  display: grid;
+  gap: 40px;
+  width: 100%;
+}
+.rx-sheet-stack .rx-sheet {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+.rx-sheet__print {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #cbb892;
+  border-radius: 9px;
+  background: #fffaf0;
+  color: #163f3b;
+  font-size: 12px;
+  font-weight: 700;
+}
+@media print {
+  .sidebar,
+  .topbar,
+  .shell__scrim,
+  .doctor-hero,
+  .doctor-directory,
+  .doctor-alert,
+  .doctor-summary-grid,
+  .doctor-record-grid,
+  .rx-patient-hero,
+  .rx-patient-directory,
+  .rx-patient-alert,
+  .rx-patient-summary,
+  .rx-patient-allergies,
+  .rx-sheet-hero,
+  .patient-welcome,
+  .patient-section-nav,
+  .patient-panel > header,
+  .rx-sheet__actions,
+  .rx-sheet__print {
+    display: none !important;
+  }
+  body.printing-rx * {
+    visibility: hidden;
+  }
+  body.printing-rx .rx-sheet--print-target,
+  body.printing-rx .rx-sheet--print-target * {
+    visibility: visible;
+  }
+  body.printing-rx .rx-sheet--print-target {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    outline: none;
+    box-shadow: none;
+    background: #fff;
+  }
+}
+@media (max-width: 720px) {
+  .rx-sheet {
+    padding: 20px 16px;
+    outline-width: 4px;
+  }
+  .rx-sheet__head,
+  .rx-sheet__parties,
+  .rx-sheet__facts,
+  .rx-sheet__sign {
+    grid-template-columns: 1fr;
+    display: grid;
+    text-align: left;
+  }
+  .rx-sheet__title {
+    text-align: left;
+  }
+  .rx-sheet__table td:nth-child(3),
+  .rx-sheet__table td:nth-child(4) {
+    white-space: normal;
+  }
+}

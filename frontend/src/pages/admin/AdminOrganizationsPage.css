@@ -4,7 +4,7 @@
 }
 .organizations-hero {
   align-items: center;
-  background: linear-gradient(120deg, #063c55, #0b8588);
+  background: var(--hero);
   border-radius: 24px;
   color: #fff;
   display: flex;
@@ -19,6 +19,7 @@
   letter-spacing: 0.12em;
 }
 .organizations-hero h2 {
+  font-family: "Fraunces", Georgia, serif;
   font-size: 34px;
   margin: 12px 0 8px;
 }
@@ -207,6 +208,11 @@
   color: #087478;
   display: flex;
   gap: 7px;
+}
+.organization-card footer button.danger {
+  background: #fff4f5;
+  border-color: #f1cbd0;
+  color: #a63c47;
 }
 .organizations-state {
   color: #71848d;

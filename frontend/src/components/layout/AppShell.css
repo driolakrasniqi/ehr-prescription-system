@@ -12,8 +12,8 @@
   flex-direction: column;
   color: #e9f5f6;
   background:
-    radial-gradient(circle at 20% 10%, rgba(113, 227, 207, 0.13), transparent 24%),
-    linear-gradient(165deg, var(--navy) 0%, var(--navy-deep) 72%);
+    radial-gradient(circle at 18% 8%, rgba(126, 236, 216, 0.16), transparent 26%),
+    linear-gradient(168deg, var(--navy) 0%, var(--navy-deep) 78%);
   z-index: 30;
 }
 .sidebar__brand {
@@ -73,7 +73,7 @@
 }
 .sidebar__nav a.active {
   color: #fff;
-  background: linear-gradient(90deg, rgba(21, 151, 159, 0.92), rgba(20, 112, 150, 0.76));
+  background: linear-gradient(90deg, rgba(11, 138, 134, 0.95), rgba(14, 108, 142, 0.82));
   box-shadow: 0 10px 22px rgba(0, 15, 30, 0.18);
 }
 .sidebar__soon {
@@ -144,6 +144,9 @@
 }
 .shell__main {
   min-width: 0;
+  background:
+    radial-gradient(ellipse at top right, rgba(126, 236, 216, 0.1), transparent 36%),
+    linear-gradient(180deg, #f4f8fa 0%, var(--surface-soft) 180px);
 }
 .topbar {
   height: 84px;
@@ -151,9 +154,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 0.88);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(14px);
+  background: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid rgba(215, 227, 232, 0.9);
+  backdrop-filter: blur(18px);
 }
 .topbar__heading {
   display: flex;
@@ -170,8 +173,11 @@
 }
 .topbar h1 {
   margin: 3px 0 0;
-  font-family: "Fraunces", serif;
-  font-size: 23px;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+  color: #1f333c;
 }
 .topbar__actions {
   display: flex;

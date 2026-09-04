@@ -7,12 +7,16 @@ import {
   updateUserStatusSchema,
   updateUserProfileSchema,
   createStaffSchema,
+  createAdminSchema,
   createPatientSchema,
   createOrganizationSchema,
   organizationIdSchema,
   updateOrganizationSchema,
   updateOrganizationStatusSchema,
-  userIdSchema
+  resetUserPasswordSchema,
+  userIdSchema,
+  activitySearchSchema,
+  reportPeriodSchema
 } from "../validators/adminUser.validator.js";
 
 import { AppError } from "../utils/errors.js";
@@ -31,6 +35,34 @@ export async function listUsers(
         users
       }
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getOverview(
+  _request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const data = await service.getOverview();
+    response.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getReports(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { period } = reportPeriodSchema.parse(request.query);
+    const data = await service.getReports(period);
+    response.set("Cache-Control", "no-store");
+    response.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }
@@ -178,6 +210,28 @@ export async function unlockUser(
   }
 }
 
+export async function resetPassword(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
+    const userId = userIdSchema.parse(request.params.userId);
+    const input = resetUserPasswordSchema.parse(request.body);
+    await service.resetUserPassword(userId, input.newPassword, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
+    response.status(200).json({
+      success: true,
+      data: { message: "Password reset. The user must sign in with the new password." }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function createStaff(
   request: Request,
   response: Response,
@@ -187,6 +241,24 @@ export async function createStaff(
     if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
     const input = createStaffSchema.parse(request.body);
     const userId = await service.createStaff(input, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
+    response.status(201).json({ success: true, data: { userId } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function createAdmin(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
+    const input = createAdminSchema.parse(request.body);
+    const userId = await service.createAdmin(input, request.user.id, {
       ipAddress: request.ip ?? null,
       userAgent: request.get("user-agent") ?? null
     });
@@ -283,6 +355,85 @@ export async function createPatient(
       userAgent: request.get("user-agent") ?? null
     });
     response.status(201).json({ success: true, data: { userId } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteUser(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
+    const userId = userIdSchema.parse(request.params.userId);
+    await service.deleteUser(userId, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
+    response.status(200).json({ success: true, data: { deleted: true } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteOrganization(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
+    const organizationId = organizationIdSchema.parse(request.params.organizationId);
+    await service.deleteOrganization(organizationId, request.user.id, {
+      ipAddress: request.ip ?? null,
+      userAgent: request.get("user-agent") ?? null
+    });
+    response.status(200).json({ success: true, data: { deleted: true } });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUserDeletionCheck(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    if (!request.user) throw new AppError(401, "UNAUTHENTICATED", "Authentication is required.");
+    const userId = userIdSchema.parse(request.params.userId);
+    const data = await service.getUserDeletionCheck(userId, request.user.id);
+    response.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getOrganizationDeletionCheck(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const organizationId = organizationIdSchema.parse(request.params.organizationId);
+    const data = await service.getOrganizationDeletionCheck(organizationId);
+    response.status(200).json({ success: true, data });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function listActivity(
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { search } = activitySearchSchema.parse(request.query);
+    const data = await service.listActivity(search);
+    response.status(200).json({ success: true, data });
   } catch (error) {
     next(error);
   }

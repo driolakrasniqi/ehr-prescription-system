@@ -17,6 +17,7 @@ import {
   type PatientProfile,
   type UpdatePatientProfileInput
 } from "../../api/patientPortalApi";
+import { submitFormOnEnter } from "../../utils/formEnterSubmit";
 import "./PatientProfilePage.css";
 
 function errorMessage(error: unknown): string {
@@ -176,7 +177,7 @@ export function PatientProfilePage() {
         </div>
       )}
 
-      <form className="patient-profile-grid" onSubmit={save}>
+      <form className="patient-profile-grid" onSubmit={save} onKeyDown={submitFormOnEnter}>
         <section className="patient-profile-panel">
           <header>
             <div>

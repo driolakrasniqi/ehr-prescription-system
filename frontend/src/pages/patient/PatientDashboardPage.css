@@ -12,16 +12,16 @@
   gap: 20px;
   padding: 25px 28px;
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: 22px;
   background:
-    radial-gradient(circle at 90% 20%, rgba(123, 97, 255, 0.12), transparent 28%),
-    linear-gradient(135deg, #ffffff, #f8faff);
-  box-shadow: 0 10px 34px rgba(25, 57, 72, 0.05);
+    radial-gradient(circle at 90% 20%, rgba(126, 236, 216, 0.2), transparent 28%),
+    linear-gradient(135deg, #ffffff, #f4fbf9);
+  box-shadow: var(--card-shadow);
 }
 
 .patient-welcome span,
 .patient-panel > header span {
-  color: #7260df;
+  color: var(--teal);
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 1.1px;
@@ -171,6 +171,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: 1;
   min-width: max-content;
   gap: 8px;
   padding: 10px 13px;
@@ -306,6 +307,19 @@
 
 /* Prescriptions */
 
+.patient-rx-sheets {
+  display: grid;
+  gap: 40px;
+  padding: 20px;
+  width: 100%;
+}
+.patient-rx-sheets .rx-sheet {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  outline-width: 4px;
+}
+
 .prescription-list {
   display: grid;
 }
@@ -343,39 +357,6 @@
   margin-top: 4px;
   color: #84919b;
   font-size: 9px;
-}
-
-.rx-status {
-  flex-shrink: 0;
-  height: fit-content;
-  padding: 5px 8px;
-  border-radius: 20px;
-  background: #eef2f5;
-  color: #5d6b74;
-  font-size: 8px;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.rx-status--issued {
-  color: #9a651a;
-  background: #fff3d9;
-}
-
-.rx-status--partially_dispensed {
-  color: #2c6caf;
-  background: #e9f3ff;
-}
-
-.rx-status--fully_dispensed {
-  color: #137653;
-  background: #e7f8ef;
-}
-
-.rx-status--cancelled,
-.rx-status--expired {
-  color: #bd4651;
-  background: #ffebed;
 }
 
 .medication-lines {

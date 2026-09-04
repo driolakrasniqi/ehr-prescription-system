@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { changePasswordSchema, registerSchema } from "../src/validators/auth.validator.js";
 import {
+  createAdminSchema,
   createPatientSchema,
   createStaffSchema,
   updatePatientProfileSchema,
@@ -52,6 +53,16 @@ test("staff creation rejects ADMIN role", () => {
     organizationId: 1
   });
   assert.equal(result.success, false);
+});
+
+test("admin creation accepts an administrator account", () => {
+  const result = createAdminSchema.safeParse({
+    email: "second.admin@example.com",
+    password: "StrongPass123!",
+    firstName: "System",
+    lastName: "Admin"
+  });
+  assert.equal(result.success, true);
 });
 
 test("admin status input rejects LOCKED", () => {

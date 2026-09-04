@@ -2,11 +2,15 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   Activity,
+  BarChart3,
   Building2,
+  CalendarDays,
   HeartPulse,
+  History,
   LayoutDashboard,
   LogOut,
   Menu,
+  Pill,
   Settings,
   ShieldCheck,
   Stethoscope,
@@ -38,12 +42,32 @@ function getPageTitle(pathname: string, role: UserRole): string {
     return "People & Access";
   }
 
+  if (pathname === "/admin/activity") {
+    return "Tracking";
+  }
+
+  if (pathname === "/admin/reports") {
+    return "Statistical reports";
+  }
+
   if (pathname === "/patient/profile") {
     return "My profile";
   }
 
   if (pathname === "/doctor/patients") {
     return "Patient care";
+  }
+
+  if (pathname === "/doctor/visits") {
+    return "Visits";
+  }
+
+  if (pathname === "/pharmacist/patients") {
+    return "Patient lookup";
+  }
+
+  if (pathname === "/patient/prescriptions") {
+    return "My prescriptions";
   }
 
   if (pathname === "/patient" || pathname === "/patient/dashboard") {
@@ -117,10 +141,12 @@ export function AppShell() {
         <nav className="sidebar__nav" onClick={() => setMenuOpen(false)}>
           <p>Workspace</p>
 
-          <NavLink to="/" end>
-            <LayoutDashboard size={19} />
-            Overview
-          </NavLink>
+          {user.role !== "PATIENT" && (
+            <NavLink to="/" end>
+              <LayoutDashboard size={19} />
+              Overview
+            </NavLink>
+          )}
 
           {user.role === "ADMIN" && (
             <>
@@ -138,22 +164,37 @@ export function AppShell() {
                 <Building2 size={19} />
                 Clinics &amp; Pharmacies
               </NavLink>
+
+              <NavLink to="/admin/activity">
+                <History size={19} />
+                Tracking
+              </NavLink>
+
+              <NavLink to="/admin/reports">
+                <BarChart3 size={19} />
+                Reports
+              </NavLink>
             </>
           )}
 
           {user.role === "DOCTOR" && (
-            <NavLink to="/doctor/patients">
-              <Stethoscope size={19} />
-              Patients
-            </NavLink>
+            <>
+              <NavLink to="/doctor/patients">
+                <Stethoscope size={19} />
+                Patients
+              </NavLink>
+              <NavLink to="/doctor/visits">
+                <CalendarDays size={19} />
+                Visits
+              </NavLink>
+            </>
           )}
 
           {user.role === "PHARMACIST" && (
-            <span className="sidebar__soon">
-              <Activity size={19} />
-              Prescriptions
-              <small>Next module</small>
-            </span>
+            <NavLink to="/pharmacist/patients">
+              <UserRound size={19} />
+              Patients
+            </NavLink>
           )}
 
           {user.role === "PATIENT" && (
@@ -161,6 +202,11 @@ export function AppShell() {
               <NavLink to="/patient" end>
                 <Activity size={19} />
                 My health
+              </NavLink>
+
+              <NavLink to="/patient/prescriptions">
+                <Pill size={19} />
+                My prescriptions
               </NavLink>
 
               <NavLink to="/patient/profile">

@@ -1,69 +1,90 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
 :root {
-  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
-  color: #172b3a;
-  background: #f4f7f8;
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  color: #153246;
+  background: #eef4f6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --navy: #082f49;
-  --navy-deep: #06253a;
-  --teal: #087f8c;
-  --teal-dark: #076b75;
-  --mint: #71e3cf;
+  --navy: #062b42;
+  --navy-deep: #041e30;
+  --teal: #0b8a86;
+  --teal-dark: #08716e;
+  --mint: #7eecd8;
   --blue: #1f6feb;
-  --ink: #172b3a;
-  --ink-muted: #667b88;
+  --ink: #153246;
+  --ink-muted: #5f7584;
   --surface: #fff;
-  --surface-soft: #f4f7f8;
-  --line: #dce5e8;
+  --surface-soft: #eef4f6;
+  --line: #d7e3e8;
   --danger: #c94752;
   --warning: #b36a12;
   --success: #147d58;
-  --shadow: 0 18px 50px rgba(22, 55, 73, 0.08);
+  --shadow: 0 18px 46px rgba(8, 47, 73, 0.08);
+  --hero:
+    radial-gradient(circle at 88% 12%, rgba(126, 236, 216, 0.28), transparent 26%),
+    radial-gradient(circle at 8% 92%, rgba(47, 140, 196, 0.22), transparent 32%),
+    linear-gradient(128deg, #062b42 0%, #0a5364 52%, #0c8a7c 100%);
+  --card-shadow: 0 12px 36px rgba(12, 52, 72, 0.06);
 }
+
 * {
   box-sizing: border-box;
 }
+
 html {
   min-width: 320px;
   min-height: 100%;
+  scroll-behavior: smooth;
 }
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100svh;
-  background: var(--surface-soft);
+  background:
+    radial-gradient(ellipse at top, rgba(126, 236, 216, 0.12), transparent 42%),
+    var(--surface-soft);
 }
+
 button,
 input,
 textarea,
 select {
   font: inherit;
 }
+
 button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
 button {
   cursor: pointer;
 }
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.62;
 }
+
 a {
   color: inherit;
 }
+
 #root {
   min-height: 100svh;
 }
+
 ::selection {
-  background: rgba(113, 227, 207, 0.35);
+  background: rgba(126, 236, 216, 0.38);
 }
+
 .display-font {
   font-family: "Fraunces", Georgia, serif;
 }
+
 .sr-only {
   position: absolute;
   width: 1px;

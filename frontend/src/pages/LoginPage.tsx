@@ -151,7 +151,7 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="login-brand" aria-label="EHR and E-Prescription System">
+      <section className="login-brand" aria-label="Cliniq healthcare workspace">
         <div className="login-brand-content">
           <div className="brand-logo">
             <div className="brand-logo-icon">
@@ -159,27 +159,27 @@ export function LoginPage() {
             </div>
 
             <div>
-              <p className="brand-name">EHR &amp; E-Prescription</p>
+              <p className="brand-name">Cliniq</p>
 
-              <p className="brand-system">Healthcare Management System</p>
+              <p className="brand-system">Care, clearly connected</p>
             </div>
           </div>
 
           <div className="brand-message">
             <span className="brand-badge">
               <ShieldCheck size={15} />
-              Secure healthcare platform
+              Clinic, pharmacy and patient — one record
             </span>
 
-            <h1>
-              Connected healthcare.
+            <h1 className="display-font">
+              From the visit
               <br />
-              One secure record.
+              to the pharmacy.
             </h1>
 
             <p>
-              A centralized platform connecting healthcare professionals, pharmacies and patients
-              through secure electronic health records and digital prescriptions.
+              The doctor writes the consultation and the prescription. The patient keeps that sheet
+              electronically. The pharmacist finds it by patient's  name.
             </p>
           </div>
 
@@ -190,9 +190,9 @@ export function LoginPage() {
               </div>
 
               <div>
-                <strong>Electronic Health Records</strong>
+                <strong>The doctor&apos;s record</strong>
 
-                <span>Secure and centralized patient information.</span>
+                <span>Visits, allergies, conditions and the medicines just prescribed.</span>
               </div>
             </div>
 
@@ -202,9 +202,9 @@ export function LoginPage() {
               </div>
 
               <div>
-                <strong>Digital Prescriptions</strong>
+                <strong>The pharmacist&apos;s lookup</strong>
 
-                <span>Reliable prescription and dispensing workflow.</span>
+                <span>Search the patient. Read quantity and how often to take it.</span>
               </div>
             </div>
 
@@ -214,9 +214,9 @@ export function LoginPage() {
               </div>
 
               <div>
-                <strong>Role-Based Access</strong>
+                <strong>The patient&apos;s copy</strong>
 
-                <span>Dedicated access for healthcare professionals and patients.</span>
+                <span>Your own health summary and the prescription as a digital sheet.</span>
               </div>
             </div>
           </div>
@@ -225,7 +225,7 @@ export function LoginPage() {
         <div className="brand-footer">
           <ShieldCheck size={15} />
 
-          <span>Protected access to sensitive healthcare information</span>
+          <span>A diploma prototype. Do not enter real patient information.</span>
         </div>
       </section>
 
@@ -237,18 +237,17 @@ export function LoginPage() {
             </div>
 
             <div>
-              <p className="brand-name">EHR &amp; E-Prescription</p>
+              <p className="brand-name">Cliniq</p>
 
-              <p className="brand-system">Healthcare Management System</p>
+              <p className="brand-system">Care, clearly connected</p>
             </div>
           </div>
 
           <div className="login-heading">
-            <span className="login-eyebrow">SECURE ACCESS</span>
+            <span className="login-eyebrow">Cliniq</span>
 
-            <h2>Welcome back</h2>
+            <h2 className="display-font">Sign in to continue</h2>
 
-            <p>Sign in to access your healthcare workspace.</p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit} noValidate>
@@ -353,19 +352,23 @@ export function LoginPage() {
             <p className="login-signup-link">
               Don't have a patient account? <Link to="/signup">Create account</Link>
             </p>
+            <p className="login-signup-link">
+              Forgot your password? Ask an administrator to set a temporary one.
+            </p>
           </form>
 
           <div className="login-security-note">
             <ShieldCheck size={16} aria-hidden="true" />
 
             <span>
-              Your session is securely protected and access is based on your assigned account role.
+              You only see the part of Cliniq that belongs to your role: clinic, pharmacy, patient
+              portal or administration.
             </span>
           </div>
         </div>
 
         <footer className="login-footer">
-          Electronic Health Record and Digital Prescription Management System
+          Cliniq — electronic record and prescription
         </footer>
       </section>
     </main>

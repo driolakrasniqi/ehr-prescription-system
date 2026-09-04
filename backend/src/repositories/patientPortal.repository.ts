@@ -88,7 +88,6 @@ export async function updateOwnPatientProfile(
 
 interface SummaryRow extends RowDataPacket {
   activePrescriptions: number;
-  upcomingAppointments: number;
   activeAllergies: number;
   activeConditions: number;
 }
@@ -153,18 +152,6 @@ interface ConditionRow extends RowDataPacket {
   doctorName: string;
 }
 
-interface AppointmentRow extends RowDataPacket {
-  id: number;
-  appointmentNumber: string;
-  scheduledStart: Date;
-  scheduledEnd: Date;
-  appointmentType: string;
-  status: string;
-  reason: string | null;
-  practitionerName: string;
-  organizationName: string;
-}
-
 export async function getPatientDashboard(userId: number) {
   const [patientRows] = await databasePool.query<PatientRow[]>(
     `SELECT id, patient_number AS patientNumber, first_name AS firstName,
@@ -181,24 +168,21 @@ export async function getPatientDashboard(userId: number) {
   const [summaryRows] = await databasePool.query<SummaryRow[]>(
     `SELECT
        (SELECT COUNT(*) FROM prescriptions
-         WHERE patient_id = ? AND status IN ('ISSUED','PARTIALLY_DISPENSED')
-           AND (valid_until IS NULL OR valid_until >= UTC_TIMESTAMP(3))) AS activePrescriptions,
-       (SELECT COUNT(*) FROM appointments
-         WHERE patient_id = ? AND scheduled_start >= UTC_TIMESTAMP(3)
-           AND status IN ('BOOKED','CONFIRMED')) AS upcomingAppointments,
+         WHERE patient_id = ? AND status <> 'ENTERED_IN_ERROR') AS activePrescriptions,
        (SELECT COUNT(*) FROM allergies
          WHERE patient_id = ? AND clinical_status = 'ACTIVE'
            AND verification_status <> 'ENTERED_IN_ERROR') AS activeAllergies,
        (SELECT COUNT(*) FROM conditions
          WHERE patient_id = ? AND clinical_status IN ('ACTIVE','RECURRENCE','RELAPSE')
            AND verification_status <> 'ENTERED_IN_ERROR') AS activeConditions`,
-    [patient.id, patient.id, patient.id, patient.id]
+    [patient.id, patient.id, patient.id]
   );
 
   const [prescriptions] = await databasePool.query<PrescriptionRow[]>(
     `SELECT rx.id, rx.prescription_number AS prescriptionNumber, rx.status,
             rx.issued_at AS issuedAt, rx.valid_until AS validUntil,
             rx.clinical_reason AS clinicalReason,
+            rx.notes_to_pharmacist AS notesToPharmacist,
             CONCAT(d.first_name, ' ', d.last_name) AS doctorName,
             o.name AS organizationName
        FROM prescriptions rx
@@ -231,7 +215,8 @@ export async function getPatientDashboard(userId: number) {
   }
 
   const [encounters] = await databasePool.query<EncounterRow[]>(
-    `SELECT e.id, e.encounter_number AS encounterNumber, e.started_at AS startedAt,
+    `SELECT e.id, e.encounter_number AS encounterNumber,
+            DATE_FORMAT(e.started_at, '%Y-%m-%dT%H:%i:%s') AS startedAt,
             e.encounter_type AS encounterType, e.chief_complaint AS chiefComplaint,
             e.symptoms, e.examination_findings AS examinationFindings,
             e.assessment_summary AS assessmentSummary, e.plan_summary AS planSummary,
@@ -242,7 +227,7 @@ export async function getPatientDashboard(userId: number) {
        JOIN organizations o ON o.id = e.organization_id
       WHERE e.patient_id = ? AND e.status <> 'ENTERED_IN_ERROR'
       ORDER BY e.started_at DESC
-      LIMIT 5`,
+      LIMIT 10`,
     [patient.id]
   );
 
@@ -273,27 +258,10 @@ export async function getPatientDashboard(userId: number) {
     [patient.id]
   );
 
-  const [appointments] = await databasePool.query<AppointmentRow[]>(
-    `SELECT a.id, a.appointment_number AS appointmentNumber,
-            a.scheduled_start AS scheduledStart, a.scheduled_end AS scheduledEnd,
-            a.appointment_type AS appointmentType, a.status, a.reason,
-            CONCAT(p.first_name, ' ', p.last_name) AS practitionerName,
-            o.name AS organizationName
-       FROM appointments a
-       JOIN practitioners p ON p.id = a.practitioner_id
-       JOIN organizations o ON o.id = a.organization_id
-      WHERE a.patient_id = ? AND a.scheduled_start >= UTC_TIMESTAMP(3)
-        AND a.status IN ('BOOKED','CONFIRMED')
-      ORDER BY a.scheduled_start
-      LIMIT 4`,
-    [patient.id]
-  );
-
   return {
     patient,
     summary: summaryRows[0] ?? {
       activePrescriptions: 0,
-      upcomingAppointments: 0,
       activeAllergies: 0,
       activeConditions: 0
     },
@@ -302,7 +270,6 @@ export async function getPatientDashboard(userId: number) {
       items: items.filter((item) => item.prescriptionId === prescription.id)
     })),
     recentEncounters: encounters,
-    upcomingAppointments: appointments,
     activeAllergies: allergies,
     activeConditions: conditions
   };

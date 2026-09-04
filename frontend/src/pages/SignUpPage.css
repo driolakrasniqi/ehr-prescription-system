@@ -7,7 +7,7 @@
     minmax(380px, 0.85fr)
     minmax(540px, 1.15fr);
 
-  background: #f7f9fc;
+  background: var(--surface-soft);
 }
 
 .signup-brand-panel {
@@ -20,9 +20,7 @@
 
   color: #fff;
 
-  background:
-    radial-gradient(circle at 80% 20%, rgba(40, 190, 174, 0.16), transparent 28%),
-    linear-gradient(145deg, #0c3154, #0a4167 60%, #07556e);
+  background: var(--hero);
 }
 
 .signup-brand {
@@ -48,7 +46,8 @@
 
 .signup-brand strong {
   display: block;
-  font-size: 17px;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 22px;
 }
 
 .signup-brand span {
@@ -152,7 +151,9 @@
 
   padding: 50px 60px;
 
-  background: #f8fafc;
+  background:
+    radial-gradient(circle at 80% 8%, rgba(126, 236, 216, 0.14), transparent 26%),
+    #f6fafb;
 
   overflow-y: auto;
 }
@@ -162,6 +163,11 @@
   max-width: 550px;
 
   margin: auto 0;
+  padding: 32px 30px;
+  border: 1px solid rgba(215, 227, 232, 0.9);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: var(--card-shadow);
 }
 
 .signup-heading {
@@ -328,17 +334,18 @@
   margin-top: 4px;
 
   border: none;
-  border-radius: 9px;
+  border-radius: 12px;
 
-  background: #0d5278;
+  background: linear-gradient(90deg, #0a6b78, #0b8a86);
 
   color: white;
 
   font: inherit;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
 
   cursor: pointer;
+  box-shadow: 0 10px 22px rgba(11, 138, 134, 0.22);
 
   transition:
     background 150ms,
@@ -346,7 +353,7 @@
 }
 
 .signup-submit:hover:not(:disabled) {
-  background: #09476b;
+  background: linear-gradient(90deg, #085a65, #08716e);
 
   transform: translateY(-1px);
 }
@@ -367,7 +374,7 @@
 }
 
 .signup-login-link a {
-  color: #0d6689;
+  color: #0b8a86;
 
   font-weight: 600;
 
@@ -443,9 +450,9 @@
   justify-content: center;
   gap: 8px;
 
-  border-radius: 9px;
+  border-radius: 12px;
 
-  background: #0d5278;
+  background: linear-gradient(90deg, #0a6b78, #0b8a86);
   color: white;
 
   text-decoration: none;
@@ -468,6 +475,13 @@
     min-height: 100svh;
 
     padding: 35px 24px;
+  }
+
+  .signup-form-wrapper {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }
 

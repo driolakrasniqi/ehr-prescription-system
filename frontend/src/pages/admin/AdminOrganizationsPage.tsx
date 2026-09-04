@@ -10,10 +10,13 @@ import {
   RefreshCw,
   Search,
   Store,
+  Trash2,
   X
 } from "lucide-react";
 import {
+  checkOrganizationDeletion,
   createOrganization,
+  deleteOrganization,
   getManagedOrganizations,
   updateOrganization,
   updateOrganizationStatus,
@@ -21,6 +24,8 @@ import {
   type Organization,
   type OrganizationStatus
 } from "../../api/adminApi";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { submitFormOnEnter } from "../../utils/formEnterSubmit";
 import "./AdminOrganizationsPage.css";
 
 type TypeFilter = "ALL" | "CLINIC" | "PHARMACY";
@@ -80,9 +85,14 @@ export function AdminOrganizationsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState<CreateOrganizationInput>(emptyOrganization);
+  const [pendingConfirm, setPendingConfirm] = useState<
+    | { kind: "DELETE"; organization: Organization }
+    | { kind: "STATUS"; organization: Organization; status: OrganizationStatus }
+    | null
+  >(null);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       setOrganizations(await getManagedOrganizations());
@@ -160,6 +170,9 @@ export function AdminOrganizationsPage() {
     try {
       if (editingId === null) {
         await createOrganization(form);
+        setFilter("ALL");
+        setStatusFilter("ALL");
+        setQuery("");
         setNotice("Organization created successfully.");
       } else {
         const input = {
@@ -179,7 +192,7 @@ export function AdminOrganizationsPage() {
         setNotice("Organization updated successfully.");
       }
       closeDialog();
-      await load();
+      await load(true);
     } catch (saveError) {
       setError(message(saveError));
     } finally {
@@ -189,21 +202,68 @@ export function AdminOrganizationsPage() {
 
   async function changeStatus(organization: Organization, status: OrganizationStatus) {
     if (status === organization.status) return;
-    if (
-      (status === "SUSPENDED" || status === "CLOSED") &&
-      !window.confirm(
-        `${status === "CLOSED" ? "Close" : "Suspend"} ${organization.name}? Professional accounts will remain active, but new assignments require an active organization.`
-      )
-    )
+    if (status === "SUSPENDED" || status === "CLOSED") {
+      setPendingConfirm({ kind: "STATUS", organization, status });
       return;
+    }
+    await applyStatus(organization, status);
+  }
+
+  async function applyStatus(organization: Organization, status: OrganizationStatus) {
     setBusy(true);
     setError(null);
     try {
       await updateOrganizationStatus(organization.id, status);
       setNotice("Organization status updated.");
-      await load();
+      await load(true);
     } catch (statusError) {
       setError(message(statusError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestRemoveOrganization(organization: Organization) {
+    const kind = organization.organizationType === "PHARMACY" ? "pharmacy" : "clinic";
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+    try {
+      const check = await checkOrganizationDeletion(organization.id);
+      if (!check.canDelete) {
+        setError(check.reason ?? `This ${kind} cannot be deleted.`);
+        return;
+      }
+      setPendingConfirm({ kind: "DELETE", organization });
+    } catch (deleteError) {
+      setError(message(deleteError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmPending() {
+    if (!pendingConfirm) return;
+    const action = pendingConfirm;
+    setPendingConfirm(null);
+    if (action.kind === "STATUS") {
+      await applyStatus(action.organization, action.status);
+      return;
+    }
+    const organization = action.organization;
+    const kind = organization.organizationType === "PHARMACY" ? "pharmacy" : "clinic";
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteOrganization(organization.id);
+      setOrganizations((current) => current.filter((item) => item.id !== organization.id));
+      setFilter("ALL");
+      setStatusFilter("ALL");
+      setQuery("");
+      setNotice(`The ${kind} was deleted.`);
+      await load(true);
+    } catch (deleteError) {
+      setError(message(deleteError));
     } finally {
       setBusy(false);
     }
@@ -333,6 +393,15 @@ export function AdminOrganizationsPage() {
                   <Pencil size={15} />
                   Edit
                 </button>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={busy}
+                  onClick={() => void requestRemoveOrganization(organization)}
+                >
+                  <Trash2 size={15} />
+                  Delete
+                </button>
                 <select
                   aria-label={`Status for ${organization.name}`}
                   disabled={busy}
@@ -368,7 +437,7 @@ export function AdminOrganizationsPage() {
                 <X />
               </button>
             </header>
-            <form onSubmit={submit}>
+            <form onSubmit={submit} onKeyDown={submitFormOnEnter}>
               <div className="organization-form-grid">
                 <Field
                   label="Organization name"
@@ -475,6 +544,22 @@ export function AdminOrganizationsPage() {
             </form>
           </section>
         </div>
+      )}
+
+      {pendingConfirm && (
+        <ConfirmDialog
+          title={pendingConfirm.kind === "DELETE" ? "Confirm deletion" : "Confirm status change"}
+          message={
+            pendingConfirm.kind === "DELETE"
+              ? `Are you sure you want to delete ${pendingConfirm.organization.name}?`
+              : `${pendingConfirm.status === "CLOSED" ? "Close" : "Suspend"} ${pendingConfirm.organization.name}? Professional accounts will remain active, but new assignments require an active organization.`
+          }
+          confirmLabel={pendingConfirm.kind === "DELETE" ? "Delete" : "Confirm"}
+          tone={pendingConfirm.kind === "DELETE" ? "danger" : "default"}
+          busy={busy}
+          onCancel={() => !busy && setPendingConfirm(null)}
+          onConfirm={() => void confirmPending()}
+        />
       )}
     </div>
   );

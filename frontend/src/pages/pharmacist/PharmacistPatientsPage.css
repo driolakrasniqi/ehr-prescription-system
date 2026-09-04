@@ -1,0 +1,350 @@
+.rx-patient-page {
+  display: grid;
+  gap: 20px;
+}
+.rx-patient-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px;
+  border-radius: 22px;
+  color: #fff;
+  background: var(--hero);
+  box-shadow: var(--shadow);
+}
+.rx-patient-hero span,
+.rx-patient-directory header span,
+.rx-patient-head span,
+.rx-prescription-card header span {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #76f0dc;
+}
+.rx-patient-hero h2 {
+  margin: 6px 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 30px;
+}
+.rx-patient-hero p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+.rx-patient-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  border: 1px solid #f1cbd0;
+  border-radius: 12px;
+  color: var(--danger);
+  background: #fff4f5;
+}
+.rx-patient-alert span {
+  flex: 1;
+}
+.rx-patient-alert button {
+  border: 0;
+  background: none;
+  color: inherit;
+}
+.rx-patient-layout {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.rx-patient-directory,
+.rx-patient-record,
+.rx-prescription-card,
+.rx-patient-allergies {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 28px rgba(25, 57, 72, 0.04);
+}
+.rx-patient-directory {
+  overflow: hidden;
+  position: sticky;
+  top: 104px;
+}
+.rx-patient-directory > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px;
+  border-bottom: 1px solid var(--line);
+}
+.rx-patient-directory h3 {
+  margin: 3px 0 0;
+}
+.rx-patient-directory > header strong {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 10px;
+  color: var(--teal);
+  background: #e8f8f6;
+}
+.rx-patient-directory form {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 7px;
+  margin: 13px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.rx-patient-directory form input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+}
+.rx-patient-directory form button {
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--teal);
+}
+.rx-patient-list {
+  display: grid;
+  max-height: 620px;
+  overflow: auto;
+  padding: 0 8px 10px;
+}
+.rx-patient-list > p,
+.rx-patient-empty {
+  padding: 22px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+}
+.rx-patient-list button {
+  display: flex;
+  width: 100%;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  text-align: left;
+}
+.rx-patient-list button:hover,
+.rx-patient-list button.active {
+  background: #eef7f6;
+}
+.rx-patient-list strong,
+.rx-patient-list small {
+  display: block;
+}
+.rx-patient-list small {
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+.rx-patient-record {
+  overflow: hidden;
+}
+.rx-patient-head {
+  padding: 22px 22px 16px;
+}
+.rx-patient-head span {
+  color: var(--teal);
+}
+.rx-patient-head h2 {
+  margin: 4px 0;
+}
+.rx-patient-head p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.rx-patient-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 20px 16px;
+}
+.rx-patient-summary article {
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f8fafb;
+}
+.rx-patient-summary small,
+.rx-patient-summary strong {
+  display: block;
+}
+.rx-patient-summary small {
+  color: var(--ink-muted);
+  font-size: 9px;
+}
+.rx-patient-summary strong {
+  margin-top: 5px;
+  font-size: 21px;
+}
+.rx-patient-allergies {
+  margin: 0 20px 16px;
+  box-shadow: none;
+}
+.rx-patient-allergies > header,
+.rx-prescription-card > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+}
+.rx-patient-allergies h3,
+.rx-prescription-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0;
+  font-size: 15px;
+}
+.rx-patient-allergy {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-bottom: 1px solid #edf1f3;
+}
+.rx-patient-allergy:last-child {
+  border-bottom: 0;
+}
+.rx-patient-allergy strong,
+.rx-patient-allergy small {
+  display: block;
+}
+.rx-patient-allergy small {
+  margin-top: 3px;
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+.rx-patient-allergy > span,
+.rx-prescription-card em {
+  flex: none;
+  padding: 4px 8px;
+  border-radius: 15px;
+  color: #147552;
+  background: #e5f7ef;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+.rx-prescription-stack {
+  display: grid;
+  gap: 40px;
+  padding: 0 20px 28px;
+}
+.rx-prescription-stack .rx-sheet {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+}
+.rx-prescription-card {
+  box-shadow: none;
+}
+.rx-prescription-card header p {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.rx-dose-list {
+  display: grid;
+  gap: 0;
+}
+.rx-dose {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #edf1f3;
+  color: var(--teal-dark);
+}
+.rx-dose:last-child {
+  border-bottom: 0;
+}
+.rx-dose strong,
+.rx-dose small,
+.rx-dose__main {
+  display: block;
+}
+.rx-dose__main {
+  margin: 6px 0 4px;
+  color: #0b4f4a;
+  font-size: 15px;
+  font-weight: 800;
+}
+.rx-dose__freq {
+  margin: 0 0 4px;
+  color: #0b4f4a;
+  font-size: 13px;
+  font-weight: 700;
+}
+.rx-dose small {
+  color: var(--ink-muted);
+  font-size: 11px;
+}
+.rx-prescription-note {
+  margin: 0;
+  padding: 10px 16px 14px;
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+.rx-patient-state {
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--ink-muted);
+}
+.rx-patient-state[role="alert"] {
+  flex-direction: column;
+}
+.rx-patient-state button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--teal-dark);
+  background: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.spin {
+  animation: rx-patient-spin 1s linear infinite;
+}
+@keyframes rx-patient-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 900px) {
+  .rx-patient-layout {
+    grid-template-columns: 1fr;
+  }
+  .rx-patient-directory {
+    position: static;
+  }
+  .rx-patient-list {
+    max-height: 280px;
+  }
+}
+@media (max-width: 620px) {
+  .rx-patient-hero {
+    padding: 22px;
+  }
+  .rx-patient-hero svg {
+    display: none;
+  }
+}

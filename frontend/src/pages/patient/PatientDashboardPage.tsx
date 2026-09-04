@@ -3,7 +3,6 @@ import { isAxiosError } from "axios";
 import { useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
-  CalendarDays,
   ChevronDown,
   ChevronRight,
   ClipboardList,
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 
 import { getPatientDashboard, type PatientDashboardData } from "../../api/patientPortalApi";
+import { PrescriptionSheet } from "../../components/PrescriptionSheet";
 
 import "./PatientDashboardPage.css";
 
@@ -53,13 +53,12 @@ function displayDate(value: string | null): string {
   return dateFormat.format(new Date(value));
 }
 
-type HealthSection = "prescriptions" | "encounters" | "allergies" | "conditions" | "appointments";
+type HealthSection = "encounters" | "allergies" | "conditions" | "prescriptions";
 const healthSections: HealthSection[] = [
-  "prescriptions",
   "encounters",
   "allergies",
   "conditions",
-  "appointments"
+  "prescriptions"
 ];
 
 export function PatientDashboardPage() {
@@ -75,7 +74,7 @@ export function PatientDashboardPage() {
   const requestedSection = searchParams.get("section");
   const activeSection: HealthSection = healthSections.includes(requestedSection as HealthSection)
     ? (requestedSection as HealthSection)
-    : "prescriptions";
+    : "encounters";
 
   function selectSection(section: HealthSection): void {
     setSearchParams({ section });
@@ -169,15 +168,6 @@ export function PatientDashboardPage() {
       <section className="patient-section-nav" aria-label="Health record sections" role="tablist">
         <button
           role="tab"
-          aria-selected={activeSection === "prescriptions"}
-          className={`patient-section-nav--purple ${activeSection === "prescriptions" ? "active" : ""}`}
-          onClick={() => selectSection("prescriptions")}
-        >
-          <Pill />
-          <span>Prescriptions</span>
-        </button>
-        <button
-          role="tab"
           aria-selected={activeSection === "encounters"}
           className={`patient-section-nav--violet ${activeSection === "encounters" ? "active" : ""}`}
           onClick={() => selectSection("encounters")}
@@ -205,12 +195,12 @@ export function PatientDashboardPage() {
         </button>
         <button
           role="tab"
-          aria-selected={activeSection === "appointments"}
-          className={`patient-section-nav--blue ${activeSection === "appointments" ? "active" : ""}`}
-          onClick={() => selectSection("appointments")}
+          aria-selected={activeSection === "prescriptions"}
+          className={`patient-section-nav--purple ${activeSection === "prescriptions" ? "active" : ""}`}
+          onClick={() => selectSection("prescriptions")}
         >
-          <CalendarDays />
-          <span>Appointments</span>
+          <Pill />
+          <span>Prescriptions</span>
         </button>
       </section>
 
@@ -234,63 +224,24 @@ export function PatientDashboardPage() {
               {data.recentPrescriptions.length === 0 ? (
                 <Empty text="No prescriptions are available yet." />
               ) : (
-                <div className="prescription-list">
+                <div className="patient-rx-sheets">
                   {data.recentPrescriptions.map((prescription) => (
-                    <section className="prescription-card" key={prescription.id}>
-                      <div className="prescription-card__head">
-                        <div>
-                          <strong>{prescription.prescriptionNumber}</strong>
-
-                          <small>
-                            {displayDate(prescription.issuedAt)}
-                            {" · "}
-                            Dr. {prescription.doctorName}
-                          </small>
-                        </div>
-
-                        <span
-                          className={`rx-status rx-status--${prescription.status.toLowerCase()}`}
-                        >
-                          {readable(prescription.status)}
-                        </span>
-                      </div>
-
-                      <div className="medication-lines">
-                        {prescription.items.map((item) => (
-                          <div key={item.id}>
-                            <span>
-                              <strong>
-                                {item.medicationName} {item.strength}
-                              </strong>
-
-                              <small>{item.dosageForm}</small>
-                            </span>
-
-                            <p>
-                              {item.frequencyText}
-
-                              {` · ${item.quantityPrescribed} ${item.quantityUnit}`}
-
-                              {item.instructions ? ` · ${item.instructions}` : ""}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-
-                      {prescription.clinicalReason && (
-                        <p className="prescription-reason">
-                          <strong>Reason:</strong> {prescription.clinicalReason}
-                        </p>
-                      )}
-
-                      <footer>
-                        <span>{prescription.organizationName}</span>
-
-                        {prescription.validUntil && (
-                          <span>Valid until {displayDate(prescription.validUntil)}</span>
-                        )}
-                      </footer>
-                    </section>
+                    <PrescriptionSheet
+                      key={prescription.id}
+                      patient={data.patient}
+                      allergies={data.activeAllergies}
+                      diagnoses={data.activeConditions}
+                      prescription={{
+                        prescriptionNumber: prescription.prescriptionNumber,
+                        issuedAt: prescription.issuedAt,
+                        validUntil: prescription.validUntil,
+                        clinicalReason: prescription.clinicalReason,
+                        notesToPharmacist: prescription.notesToPharmacist,
+                        doctorName: prescription.doctorName,
+                        clinicName: prescription.organizationName,
+                        items: prescription.items
+                      }}
+                    />
                   ))}
                 </div>
               )}
@@ -365,21 +316,19 @@ export function PatientDashboardPage() {
         </section>
       )}
 
-      {(activeSection === "allergies" ||
-        activeSection === "conditions" ||
-        activeSection === "appointments") && (
+      {(activeSection === "allergies" || activeSection === "conditions") && (
         <section className="patient-details-grid">
           {activeSection === "allergies" && (
             <article id="patient-allergies" className="patient-panel patient-detail-panel">
               <header>
                 <div>
                   <span>SAFETY</span>
-                  <h3>Active allergies</h3>
+                  <h3>Allergies</h3>
                 </div>
                 <AlertCircle size={20} />
               </header>
               {data.activeAllergies.length === 0 ? (
-                <Empty text="No active allergies are recorded." />
+                <Empty text="No allergies are recorded." />
               ) : (
                 <div className="health-record-list">
                   {data.activeAllergies.map((allergy) => (
@@ -410,12 +359,12 @@ export function PatientDashboardPage() {
               <header>
                 <div>
                   <span>HEALTH</span>
-                  <h3>Active conditions</h3>
+                  <h3>Conditions</h3>
                 </div>
                 <HeartPulse size={20} />
               </header>
               {data.activeConditions.length === 0 ? (
-                <Empty text="No active conditions are recorded." />
+                <Empty text="No conditions are recorded." />
               ) : (
                 <div className="health-record-list">
                   {data.activeConditions.map((condition) => (
@@ -431,40 +380,6 @@ export function PatientDashboardPage() {
                       {condition.notes && <p>{condition.notes}</p>}
                       <small>
                         Recorded {displayDate(condition.diagnosedAt)} by Dr. {condition.doctorName}
-                      </small>
-                    </section>
-                  ))}
-                </div>
-              )}
-            </article>
-          )}
-
-          {activeSection === "appointments" && (
-            <article id="patient-appointments" className="patient-panel patient-detail-panel">
-              <header>
-                <div>
-                  <span>SCHEDULE</span>
-                  <h3>Upcoming appointments</h3>
-                </div>
-                <CalendarDays size={20} />
-              </header>
-              {data.upcomingAppointments.length === 0 ? (
-                <Empty text="No upcoming appointments are scheduled." />
-              ) : (
-                <div className="health-record-list">
-                  {data.upcomingAppointments.map((appointment) => (
-                    <section key={appointment.id}>
-                      <div>
-                        <strong>
-                          {appointment.reason || readable(appointment.appointmentType)}
-                        </strong>
-                        <span>{readable(appointment.status)}</span>
-                      </div>
-                      <p>
-                        {displayDate(appointment.scheduledStart)} · {appointment.organizationName}
-                      </p>
-                      <small>
-                        With {appointment.practitionerName} · {appointment.appointmentNumber}
                       </small>
                     </section>
                   ))}

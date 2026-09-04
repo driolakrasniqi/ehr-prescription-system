@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 import { isAxiosError } from "axios";
 
 import {
@@ -13,18 +13,17 @@ import {
 } from "lucide-react";
 
 import {
-  getRoles,
   getUsers,
+  resetUserPassword,
   unlockUser,
-  updateRole,
   updateStatus,
   type AdminUser,
-  type EditableStatus,
-  type Role
+  type EditableStatus
 } from "../../api/adminApi";
 
 import { useAuth } from "../../auth/AuthContext";
-import type { UserRole } from "../../auth/types";
+import type { UserRole, UserStatus } from "../../auth/types";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
 import "./AdminAccessPage.css";
 
 function message(error: unknown): string {
@@ -45,12 +44,13 @@ type AccessDraft = {
   user: AdminUser;
   role: UserRole;
   status: EditableStatus;
+  newPassword: string;
+  confirmPassword: string;
 };
 
 type Confirmation = {
-  kind: "ROLE" | "STATUS" | "UNLOCK";
+  kind: "STATUS" | "UNLOCK" | "PASSWORD";
   user: AdminUser;
-  role?: UserRole;
   status?: EditableStatus;
 };
 
@@ -59,9 +59,9 @@ export function AdminAccessPage() {
 
   const [users, setUsers] = useState<AdminUser[]>([]);
 
-  const [roles, setRoles] = useState<Role[]>([]);
-
   const [query, setQuery] = useState("");
+
+  const [statusFilter, setStatusFilter] = useState<"ALL" | UserStatus>("ALL");
 
   const [loading, setLoading] = useState(true);
 
@@ -75,15 +75,14 @@ export function AdminAccessPage() {
 
   const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
 
+  const [dialogError, setDialogError] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const [nextUsers, nextRoles] = await Promise.all([getUsers(), getRoles()]);
-
-      setUsers(nextUsers);
-      setRoles(nextRoles);
+      setUsers(await getUsers());
     } catch (loadError) {
       setError(message(loadError));
     } finally {
@@ -93,12 +92,9 @@ export function AdminAccessPage() {
 
   useEffect(() => {
     let cancelled = false;
-    void Promise.all([getUsers(), getRoles()])
-      .then(([nextUsers, nextRoles]) => {
-        if (!cancelled) {
-          setUsers(nextUsers);
-          setRoles(nextRoles);
-        }
+    void getUsers()
+      .then((nextUsers) => {
+        if (!cancelled) setUsers(nextUsers);
       })
       .catch((loadError: unknown) => {
         if (!cancelled) setError(message(loadError));
@@ -114,28 +110,31 @@ export function AdminAccessPage() {
   const filtered = useMemo(() => {
     const value = query.trim().toLowerCase();
 
-    if (!value) {
-      return users;
-    }
+    return users.filter((user) => {
+      if (statusFilter !== "ALL" && user.status !== statusFilter) {
+        return false;
+      }
 
-    return users.filter((user) =>
-      [user.display_name ?? "", user.email, user.role_code, user.status]
+      if (!value) {
+        return true;
+      }
+
+      return [user.display_name ?? "", user.email, user.role_code, user.status]
         .join(" ")
         .toLowerCase()
-        .includes(value)
-    );
-  }, [query, users]);
+        .includes(value);
+    });
+  }, [query, statusFilter, users]);
 
   function openAccess(user: AdminUser) {
+    setDialogError(null);
     setDraft({
       user,
       role: user.role_code,
-      status: user.status === "LOCKED" ? "ACTIVE" : user.status
+      status: user.status === "LOCKED" ? "ACTIVE" : user.status,
+      newPassword: "",
+      confirmPassword: ""
     });
-  }
-
-  function isProfessionalRole(role: UserRole): role is "DOCTOR" | "PHARMACIST" {
-    return role === "DOCTOR" || role === "PHARMACIST";
   }
 
   async function executeChange() {
@@ -144,18 +143,18 @@ export function AdminAccessPage() {
     }
 
     const action = confirmation;
+    const passwordPayload =
+      action.kind === "PASSWORD" && draft
+        ? { newPassword: draft.newPassword, confirmPassword: draft.confirmPassword }
+        : null;
 
     setConfirmation(null);
-    setDraft(null);
     setBusy(action.user.id);
     setError(null);
+    setDialogError(null);
     setNotice(null);
 
     try {
-      if (action.kind === "ROLE" && action.role) {
-        await updateRole(action.user.id, action.role);
-      }
-
       if (action.kind === "STATUS" && action.status) {
         await updateStatus(action.user.id, action.status);
       }
@@ -164,20 +163,50 @@ export function AdminAccessPage() {
         await unlockUser(action.user.id);
       }
 
+      if (action.kind === "PASSWORD" && passwordPayload) {
+        await resetUserPassword(action.user.id, passwordPayload);
+      }
+
+      setDraft(null);
+
       if (action.kind === "UNLOCK") {
         setNotice("Account unlocked.");
-      } else if (action.kind === "ROLE") {
-        setNotice("Role updated and sessions invalidated.");
+      } else if (action.kind === "PASSWORD") {
+        setNotice("Temporary password set. The user must sign in again.");
       } else {
         setNotice("Account status updated.");
       }
 
       await load();
     } catch (operationError) {
-      setError(message(operationError));
+      setDialogError(message(operationError));
     } finally {
       setBusy(null);
     }
+  }
+
+  function reviewStatusChange(event: FormEvent) {
+    event.preventDefault();
+    if (!draft || draft.status === draft.user.status) return;
+    setConfirmation({
+      kind: "STATUS",
+      user: draft.user,
+      status: draft.status
+    });
+  }
+
+  function reviewPasswordReset(event: FormEvent) {
+    event.preventDefault();
+    if (!draft) return;
+    if (draft.newPassword !== draft.confirmPassword) {
+      setDialogError("The two passwords do not match.");
+      return;
+    }
+    setDialogError(null);
+    setConfirmation({
+      kind: "PASSWORD",
+      user: draft.user
+    });
   }
 
   return (
@@ -189,15 +218,15 @@ export function AdminAccessPage() {
           <h2>People &amp; Access</h2>
 
           <p>
-            Manage roles, account states and locked identities without mixing security controls with
-            profile data.
+            Manage roles, account states, locked identities and forgotten passwords without mixing
+            security controls with profile data.
           </p>
         </div>
 
         <ShieldCheck />
       </section>
 
-      {notice && (
+      {notice && !draft && (
         <div className="access-notice access-notice--success">
           <Check size={17} />
 
@@ -209,7 +238,7 @@ export function AdminAccessPage() {
         </div>
       )}
 
-      {error && (
+      {error && !draft && (
         <div className="access-notice access-notice--error">
           <AlertCircle size={17} />
 
@@ -226,7 +255,6 @@ export function AdminAccessPage() {
           <div>
             <h3>Accounts and permissions</h3>
 
-            <p>Profile information is managed from People Directory.</p>
           </div>
 
           <div className="access-tools">
@@ -245,6 +273,24 @@ export function AdminAccessPage() {
             </button>
           </div>
         </header>
+
+        <div className="access-status-filters">
+          {(["ALL", "ACTIVE", "PENDING", "LOCKED", "DISABLED"] as const).map((status) => (
+            <button
+              type="button"
+              key={status}
+              className={statusFilter === status ? "active" : undefined}
+              onClick={() => setStatusFilter(status)}
+            >
+              {status === "ALL" ? "All statuses" : status.charAt(0) + status.slice(1).toLowerCase()}
+              <span>
+                {status === "ALL"
+                  ? users.length
+                  : users.filter((user) => user.status === status).length}
+              </span>
+            </button>
+          ))}
+        </div>
 
         {loading ? (
           <div className="access-state">
@@ -348,18 +394,33 @@ export function AdminAccessPage() {
                 </p>
               </div>
 
-              <button type="button" onClick={() => setDraft(null)} aria-label="Close dialog">
+              <button
+                type="button"
+                onClick={() => {
+                  setDialogError(null);
+                  setDraft(null);
+                }}
+                aria-label="Close dialog"
+              >
                 <X />
               </button>
             </header>
 
             <div className="access-dialog__body">
+              {dialogError ? (
+                <div className="access-dialog-error" role="alert">
+                  <AlertCircle size={16} />
+                  <span>{dialogError}</span>
+                </div>
+              ) : null}
               {draft.user.status === "LOCKED" ? (
                 <div className="access-control">
                   <div>
                     <strong>Locked account</strong>
-
-                    <p>Reset the failed-login counter and reactivate this account.</p>
+                    <p>
+                      Status: LOCKED. This is set automatically after failed logins, not from the
+                      status list. Unlock to restore access.
+                    </p>
                   </div>
 
                   <button
@@ -376,56 +437,17 @@ export function AdminAccessPage() {
                 </div>
               ) : (
                 <>
-                  {isProfessionalRole(draft.user.role_code) ? (
-                    <div className="access-control">
-                      <label>
-                        Professional role
-                        <select
-                          value={draft.role}
-                          onChange={(event) =>
-                            setDraft({
-                              ...draft,
-                              role: event.target.value as UserRole
-                            })
-                          }
-                        >
-                          {roles
-                            .filter((role) => isProfessionalRole(role.code))
-                            .map((role) => (
-                              <option value={role.code} key={role.id}>
-                                {role.name}
-                              </option>
-                            ))}
-                        </select>
-                      </label>
-
-                      <button
-                        type="button"
-                        disabled={draft.role === draft.user.role_code}
-                        onClick={() =>
-                          setConfirmation({
-                            kind: "ROLE",
-                            user: draft.user,
-                            role: draft.role
-                          })
-                        }
-                      >
-                        Review role change
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="access-control">
-                      <div>
-                        <strong>{draft.user.role_name}</strong>
-                        <p>
-                          Patient and administrator accounts are not converted into other account
-                          types. Create a separate account when a person needs a different identity.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="access-control">
+                    <div>
+                      <strong>{draft.user.role_name}</strong>
+                      <p>
+                        Roles cannot be converted. Create a separate account when a person needs a
+                        different identity.
+                      </p>
+                    </div>
+                  </div>
+
+                  <form className="access-control access-control--stack" onSubmit={reviewStatusChange}>
                     <label>
                       Status
                       <select
@@ -438,69 +460,88 @@ export function AdminAccessPage() {
                         }
                       >
                         <option value="PENDING">Pending</option>
-
                         <option value="ACTIVE">Active</option>
-
                         <option value="DISABLED">Disabled</option>
+                        <option value="LOCKED" disabled>
+                          Locked (automatic after failed logins)
+                        </option>
                       </select>
                     </label>
 
-                    <button
-                      type="button"
-                      disabled={draft.status === draft.user.status}
-                      onClick={() =>
-                        setConfirmation({
-                          kind: "STATUS",
-                          user: draft.user,
-                          status: draft.status
-                        })
-                      }
-                    >
+                    <button type="submit" disabled={draft.status === draft.user.status}>
                       Review status change
                     </button>
-                  </div>
+                  </form>
                 </>
               )}
+
+              <form className="access-control access-control--stack" onSubmit={reviewPasswordReset}>
+                <div>
+                  <strong>Reset password</strong>
+                  <p>
+                    Use this when the person has forgotten their password. They will be signed out
+                    everywhere and must use this temporary password.
+                  </p>
+                </div>
+                <label>
+                  New temporary password
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={12}
+                    value={draft.newPassword}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        newPassword: event.target.value
+                      })
+                    }
+                  />
+                </label>
+                <label>
+                  Confirm temporary password
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    required
+                    minLength={12}
+                    value={draft.confirmPassword}
+                    onChange={(event) =>
+                      setDraft({
+                        ...draft,
+                        confirmPassword: event.target.value
+                      })
+                    }
+                  />
+                </label>
+                {draft.newPassword && draft.confirmPassword && draft.newPassword !== draft.confirmPassword ? (
+                  <p>The two passwords do not match.</p>
+                ) : null}
+                <button type="submit">Review password reset</button>
+              </form>
             </div>
           </section>
         </div>
       )}
 
       {confirmation && (
-        <div className="access-backdrop">
-          <section
-            className="access-confirm"
-            role="alertdialog"
-            aria-modal="true"
-            aria-labelledby="confirm-title"
-          >
-            <AlertCircle />
-
-            <h2 id="confirm-title">Confirm security change</h2>
-
-            <p>
-              {confirmation.kind === "ROLE"
-                ? `Change ${confirmation.user.display_name ?? confirmation.user.email} to ${
-                    confirmation.role
-                  }? Existing sessions will be invalidated.`
-                : confirmation.kind === "STATUS"
-                  ? `Change ${confirmation.user.display_name ?? confirmation.user.email} to ${
-                      confirmation.status
-                    }?`
-                  : `Unlock ${confirmation.user.display_name ?? confirmation.user.email}?`}
-            </p>
-
-            <footer>
-              <button type="button" onClick={() => setConfirmation(null)}>
-                Cancel
-              </button>
-
-              <button type="button" onClick={() => void executeChange()}>
-                Confirm
-              </button>
-            </footer>
-          </section>
-        </div>
+        <ConfirmDialog
+          title="Confirm security change"
+          message={
+            confirmation.kind === "STATUS"
+              ? `Change ${confirmation.user.display_name ?? confirmation.user.email} to ${
+                  confirmation.status
+                }?`
+              : confirmation.kind === "PASSWORD"
+                ? `Set a new temporary password for ${
+                    confirmation.user.display_name ?? confirmation.user.email
+                  }? Existing sessions will be signed out.`
+                : `Unlock ${confirmation.user.display_name ?? confirmation.user.email}?`
+          }
+          onCancel={() => setConfirmation(null)}
+          onConfirm={() => void executeChange()}
+        />
       )}
     </div>
   );

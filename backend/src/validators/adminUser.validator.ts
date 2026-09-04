@@ -57,6 +57,26 @@ export const updateUserStatusSchema = z.object({
   status: z.enum(["PENDING", "ACTIVE", "DISABLED"])
 });
 
+export const resetUserPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(12, "New password must contain at least 12 characters.")
+      .max(128, "New password is too long."),
+    confirmPassword: z.string().min(1, "Please confirm the new password.")
+  })
+  .superRefine((data, context) => {
+    if (data.newPassword !== data.confirmPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Passwords do not match."
+      });
+    }
+  });
+
+export type ResetUserPasswordInput = z.infer<typeof resetUserPasswordSchema>;
+
 export const createStaffSchema = z.object({
   email: z.string().trim().email().max(254),
 
@@ -80,6 +100,15 @@ export const createStaffSchema = z.object({
 });
 
 export type CreateStaffInput = z.infer<typeof createStaffSchema>;
+
+export const createAdminSchema = z.object({
+  email: z.string().trim().email().max(254),
+  password: z.string().min(12).max(128),
+  firstName: z.string().trim().min(2).max(100),
+  lastName: z.string().trim().min(2).max(100)
+});
+
+export type CreateAdminInput = z.infer<typeof createAdminSchema>;
 
 export const createPatientSchema = z.object({
   email: z.string().trim().email().max(254),
@@ -168,3 +197,11 @@ export const updateUserProfileSchema = z.discriminatedUnion("profileType", [
 ]);
 
 export type UpdateUserProfileInput = z.infer<typeof updateUserProfileSchema>;
+
+export const activitySearchSchema = z.object({
+  search: z.string().trim().max(100).optional().default("")
+});
+
+export const reportPeriodSchema = z.object({
+  period: z.enum(["30d", "90d", "12m", "all"]).optional().default("all")
+});

@@ -57,6 +57,10 @@ interface RoleIdRow extends RowDataPacket {
   id: number;
 }
 
+interface IdRow extends RowDataPacket {
+  id: number;
+}
+
 export async function getAllUsers(): Promise<AdminUserRecord[]> {
   const [rows] = await databasePool.query<AdminUserRecord[]>(
     `
@@ -119,6 +123,32 @@ export async function getActiveRoles(): Promise<RoleRecord[]> {
   return rows;
 }
 
+export async function getOverviewStats() {
+  const [roleRows] = await databasePool.query<RowDataPacket[]>(
+    `SELECT r.code AS roleCode, COUNT(*) AS total
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+      GROUP BY r.code`
+  );
+  const [orgRows] = await databasePool.query<RowDataPacket[]>(
+    `SELECT organization_type AS organizationType, COUNT(*) AS total
+       FROM organizations
+      GROUP BY organization_type`
+  );
+  const counts = Object.fromEntries(roleRows.map((row) => [row.roleCode, Number(row.total)]));
+  const organizations = Object.fromEntries(
+    orgRows.map((row) => [row.organizationType, Number(row.total)])
+  );
+  return {
+    doctors: counts.DOCTOR ?? 0,
+    pharmacists: counts.PHARMACIST ?? 0,
+    patients: counts.PATIENT ?? 0,
+    admins: counts.ADMIN ?? 0,
+    clinics: organizations.CLINIC ?? 0,
+    pharmacies: organizations.PHARMACY ?? 0
+  };
+}
+
 export async function getActiveOrganizations(): Promise<OrganizationRecord[]> {
   const [rows] = await databasePool.query<OrganizationRecord[]>(
     `
@@ -176,7 +206,7 @@ export async function getAllOrganizations(): Promise<OrganizationRecord[]> {
       LEFT JOIN practitioner_organizations po
         ON po.organization_id = o.id
       GROUP BY o.id
-      ORDER BY o.organization_type, o.name
+      ORDER BY o.created_at DESC, o.id DESC
     `
   );
 
@@ -562,6 +592,27 @@ export async function createStaffAccount(
   }
 }
 
+export async function createAdminAccount(
+  input: { email: string; firstName: string; lastName: string },
+  passwordHash: string
+): Promise<number> {
+  const [roles] = await databasePool.query<RoleIdRow[]>(
+    `SELECT id FROM roles WHERE code = 'ADMIN' AND is_active = TRUE LIMIT 1`
+  );
+  const role = roles[0];
+  if (!role) {
+    throw new AppError(400, "VALIDATION_ERROR", "The administrator role is not available.");
+  }
+
+  const displayName = `${input.firstName.trim()} ${input.lastName.trim()}`;
+  const [result] = await databasePool.query<ResultSetHeader>(
+    `INSERT INTO users (role_id, email, password_hash, display_name, status, password_changed_at)
+     VALUES (?, ?, ?, ?, 'ACTIVE', UTC_TIMESTAMP(3))`,
+    [role.id, input.email.trim().toLowerCase(), passwordHash, displayName]
+  );
+  return result.insertId;
+}
+
 function optionalValue(value: string): string | null {
   const trimmed = value.trim();
   return trimmed || null;
@@ -891,4 +942,140 @@ export async function updateUserProfile(
   } finally {
     connection.release();
   }
+}
+
+interface CountRow extends RowDataPacket {
+  encounters: number | string;
+  prescriptions: number | string;
+  allergies: number | string;
+  conditions: number | string;
+  doctors: number | string;
+  pharmacists: number | string;
+  patients: number | string;
+  createdPatients: number | string;
+}
+
+function countValue(value: number | string | undefined): number {
+  return Number(value ?? 0);
+}
+
+export async function getPatientIdByUserId(userId: number): Promise<number | null> {
+  const [rows] = await databasePool.query<IdRow[]>(
+    `SELECT id FROM patients WHERE user_id = ? LIMIT 1`,
+    [userId]
+  );
+  return rows[0]?.id ?? null;
+}
+
+export async function getPractitionerIdByUserId(userId: number): Promise<number | null> {
+  const [rows] = await databasePool.query<IdRow[]>(
+    `SELECT id FROM practitioners WHERE user_id = ? LIMIT 1`,
+    [userId]
+  );
+  return rows[0]?.id ?? null;
+}
+
+export async function getPatientRecordCounts(patientId: number) {
+  const [rows] = await databasePool.query<CountRow[]>(
+    `SELECT
+       (SELECT COUNT(*) FROM encounters WHERE patient_id = ?) AS encounters,
+       (SELECT COUNT(*) FROM prescriptions WHERE patient_id = ?) AS prescriptions,
+       (SELECT COUNT(*) FROM allergies WHERE patient_id = ?) AS allergies,
+       (SELECT COUNT(*) FROM conditions WHERE patient_id = ?) AS conditions`,
+    [patientId, patientId, patientId, patientId]
+  );
+  const row = rows[0];
+  return {
+    encounters: countValue(row?.encounters),
+    prescriptions: countValue(row?.prescriptions),
+    allergies: countValue(row?.allergies),
+    conditions: countValue(row?.conditions)
+  };
+}
+
+export async function getDoctorRecordCounts(practitionerId: number) {
+  const [rows] = await databasePool.query<CountRow[]>(
+    `SELECT
+       (SELECT COUNT(*) FROM encounters WHERE doctor_id = ?) AS encounters,
+       (SELECT COUNT(*) FROM prescriptions WHERE doctor_id = ?) AS prescriptions,
+       (SELECT COUNT(*) FROM allergies WHERE recorded_by_practitioner_id = ?) AS allergies,
+       (SELECT COUNT(*) FROM conditions WHERE recorded_by_practitioner_id = ?) AS conditions`,
+    [practitionerId, practitionerId, practitionerId, practitionerId]
+  );
+  const row = rows[0];
+  return {
+    encounters: countValue(row?.encounters),
+    prescriptions: countValue(row?.prescriptions),
+    allergies: countValue(row?.allergies),
+    conditions: countValue(row?.conditions)
+  };
+}
+
+export async function getAdminDeletionCounts(userId: number) {
+  const [rows] = await databasePool.query<CountRow[]>(
+    `SELECT (SELECT COUNT(*) FROM patients WHERE created_by_user_id = ?) AS createdPatients`,
+    [userId]
+  );
+  return { createdPatients: countValue(rows[0]?.createdPatients) };
+}
+
+export async function getOrganizationDeletionCounts(organizationId: number) {
+  const [rows] = await databasePool.query<CountRow[]>(
+    `SELECT
+       (SELECT COUNT(*) FROM practitioner_organizations
+         WHERE organization_id = ? AND professional_role = 'DOCTOR') AS doctors,
+       (SELECT COUNT(*) FROM practitioner_organizations
+         WHERE organization_id = ? AND professional_role = 'PHARMACIST') AS pharmacists,
+       (SELECT COUNT(*) FROM encounters WHERE organization_id = ?) AS encounters,
+       (SELECT COUNT(*) FROM prescriptions WHERE organization_id = ?) AS prescriptions,
+       (SELECT COUNT(*) FROM (
+          SELECT patient_id FROM encounters WHERE organization_id = ?
+          UNION
+          SELECT patient_id FROM prescriptions WHERE organization_id = ?
+        ) linked_patients) AS patients`,
+    [
+      organizationId,
+      organizationId,
+      organizationId,
+      organizationId,
+      organizationId,
+      organizationId
+    ]
+  );
+  const row = rows[0];
+  return {
+    doctors: countValue(row?.doctors),
+    pharmacists: countValue(row?.pharmacists),
+    encounters: countValue(row?.encounters),
+    prescriptions: countValue(row?.prescriptions),
+    patients: countValue(row?.patients)
+  };
+}
+
+export async function deleteUserAccount(userId: number, patientId: number | null, practitionerId: number | null) {
+  const connection = await databasePool.getConnection();
+  try {
+    await connection.beginTransaction();
+    await connection.query(`DELETE FROM refresh_tokens WHERE user_id = ?`, [userId]);
+    if (practitionerId) {
+      await connection.query(`DELETE FROM practitioner_organizations WHERE practitioner_id = ?`, [
+        practitionerId
+      ]);
+      await connection.query(`DELETE FROM practitioners WHERE id = ?`, [practitionerId]);
+    }
+    if (patientId) {
+      await connection.query(`DELETE FROM patients WHERE id = ?`, [patientId]);
+    }
+    await connection.query(`DELETE FROM users WHERE id = ?`, [userId]);
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
+export async function deleteOrganizationById(organizationId: number): Promise<void> {
+  await databasePool.query(`DELETE FROM organizations WHERE id = ?`, [organizationId]);
 }

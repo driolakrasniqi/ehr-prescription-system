@@ -9,7 +9,7 @@
   padding: 28px 30px;
   border-radius: 20px;
   color: white;
-  background: linear-gradient(120deg, #083750, #087681);
+  background: var(--hero);
 }
 .access-hero span,
 .access-dialog header span {
@@ -20,6 +20,7 @@
 }
 .access-hero h2 {
   margin: 7px 0 5px;
+  font-family: "Fraunces", Georgia, serif;
   font-size: 30px;
 }
 .access-hero p {
@@ -67,6 +68,41 @@
   gap: 20px;
   padding: 21px 23px;
   border-bottom: 1px solid var(--line);
+}
+.access-status-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  padding: 12px 23px 0;
+}
+.access-status-filters button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.access-status-filters button.active {
+  border-color: #78c9c0;
+  background: #eaf8f5;
+  color: #087267;
+}
+.access-status-filters span {
+  min-width: 18px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: #edf1f3;
+  font-size: 10px;
+}
+.access-status--pending {
+  color: #845d13;
+  background: #fff4d9;
 }
 .access-panel h3 {
   margin: 0;
@@ -231,11 +267,34 @@
   gap: 15px;
   padding: 25px 30px 30px;
 }
+.access-dialog-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  color: #a63c47;
+  background: #fff0f1;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.access-dialog-error span {
+  min-width: 0;
+  flex: 1;
+}
+.access-directory-link {
+  display: inline-flex;
+  margin-top: 8px;
+  color: #087267;
+  font-size: 11px;
+  font-weight: 800;
+}
 .access-control {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: end;
   gap: 14px;
+  margin: 0;
   padding: 18px;
   border: 1px solid var(--line);
   border-radius: 14px;
@@ -270,6 +329,17 @@
 }
 .access-control button:disabled {
   opacity: 0.4;
+}
+.access-control--stack {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+.access-control--stack input {
+  min-height: 44px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
 }
 .access-confirm {
   width: min(430px, 100%);

@@ -85,3 +85,22 @@ export type CreateEncounterInput = z.infer<typeof createEncounterSchema>;
 export type CreateConditionInput = z.infer<typeof createConditionSchema>;
 export type CreateAllergyInput = z.infer<typeof createAllergySchema>;
 export type CreatePrescriptionInput = z.infer<typeof createPrescriptionSchema>;
+
+export const encounterIdSchema = id;
+export const conditionIdSchema = id;
+export const allergyIdSchema = id;
+export const prescriptionIdSchema = id;
+
+export const updateEncounterSchema = createEncounterSchema.omit({ patientId: true });
+export const updateConditionSchema = createConditionSchema.omit({ patientId: true });
+export const updateAllergySchema = createAllergySchema.omit({ patientId: true });
+export const updatePrescriptionSchema = createPrescriptionSchema
+  .omit({ patientId: true, validUntil: true })
+  .extend({
+    validUntil: z.iso.datetime({ offset: true }).optional()
+  });
+
+export type UpdateEncounterInput = z.infer<typeof updateEncounterSchema>;
+export type UpdateConditionInput = z.infer<typeof updateConditionSchema>;
+export type UpdateAllergyInput = z.infer<typeof updateAllergySchema>;
+export type UpdatePrescriptionInput = z.infer<typeof updatePrescriptionSchema>;

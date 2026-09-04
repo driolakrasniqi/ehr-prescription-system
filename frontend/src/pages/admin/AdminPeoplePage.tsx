@@ -9,17 +9,23 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Shield,
+  Trash2,
   UserRound,
   X
 } from "lucide-react";
 
 import {
+  checkUserDeletion,
+  createAdmin,
   createPatient,
   createStaff,
+  deleteUser,
   getManagedOrganizations,
   getUserDetails,
   getUsers,
   updateUserProfile,
+  type AdminInput,
   type AdminUser,
   type BloodType,
   type MaritalStatus,
@@ -31,10 +37,13 @@ import {
 } from "../../api/adminApi";
 
 import type { UserRole } from "../../auth/types";
+import { useAuth } from "../../auth/AuthContext";
+import { ConfirmDialog } from "../../components/ConfirmDialog";
+import { submitFormOnEnter } from "../../utils/formEnterSubmit";
 import "./AdminPeoplePage.css";
 
 type Filter = "ALL" | UserRole;
-type AddKind = "PATIENT" | "CLINICAL";
+type AddKind = "PATIENT" | "CLINICAL" | "ADMIN";
 
 interface EditingState {
   user: AdminUser;
@@ -74,6 +83,15 @@ function createEmptyStaff(): StaffInput {
     phone: "",
     organizationId: 0,
     positionTitle: ""
+  };
+}
+
+function createEmptyAdmin(): AdminInput {
+  return {
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: ""
   };
 }
 
@@ -148,6 +166,7 @@ function formatRole(role: Filter): string {
 }
 
 export function AdminPeoplePage() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<AdminUser[]>([]);
 
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -162,6 +181,8 @@ export function AdminPeoplePage() {
 
   const [error, setError] = useState<string | null>(null);
 
+  const [dialogError, setDialogError] = useState<string | null>(null);
+
   const [notice, setNotice] = useState<string | null>(null);
 
   const [addOpen, setAddOpen] = useState(false);
@@ -172,10 +193,14 @@ export function AdminPeoplePage() {
 
   const [staff, setStaff] = useState<StaffInput>(createEmptyStaff);
 
+  const [adminAccount, setAdminAccount] = useState<AdminInput>(createEmptyAdmin);
+
   const [editing, setEditing] = useState<EditingState | null>(null);
 
-  const load = useCallback(async (): Promise<void> => {
-    setLoading(true);
+  const [pendingDelete, setPendingDelete] = useState<AdminUser | null>(null);
+
+  const load = useCallback(async (silent = false): Promise<void> => {
+    if (!silent) setLoading(true);
     setError(null);
 
     try {
@@ -263,11 +288,12 @@ export function AdminPeoplePage() {
     setAddKind("PATIENT");
     setPatient(createEmptyPatient());
     setStaff(createEmptyStaff());
+    setAdminAccount(createEmptyAdmin());
   }
 
   function openAddPersonDialog(): void {
     resetAddPersonForm();
-    setError(null);
+    setDialogError(null);
     setNotice(null);
     setAddOpen(true);
   }
@@ -278,12 +304,14 @@ export function AdminPeoplePage() {
     }
 
     setAddOpen(false);
+    setDialogError(null);
     resetAddPersonForm();
   }
 
   async function openEdit(user: AdminUser): Promise<void> {
     setBusy(true);
     setError(null);
+    setDialogError(null);
     setNotice(null);
 
     try {
@@ -306,6 +334,7 @@ export function AdminPeoplePage() {
     }
 
     setEditing(null);
+    setDialogError(null);
   }
 
   async function saveProfile(event: FormEvent<HTMLFormElement>): Promise<void> {
@@ -316,7 +345,7 @@ export function AdminPeoplePage() {
     }
 
     setBusy(true);
-    setError(null);
+    setDialogError(null);
     setNotice(null);
 
     try {
@@ -328,7 +357,52 @@ export function AdminPeoplePage() {
 
       await load();
     } catch (saveError) {
-      setError(getErrorMessage(saveError));
+      setDialogError(getErrorMessage(saveError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function requestRemovePerson(user: AdminUser): Promise<void> {
+    setBusy(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const check = await checkUserDeletion(user.id);
+      if (!check.canDelete) {
+        setError(check.reason ?? "This person cannot be deleted.");
+        return;
+      }
+      setPendingDelete(user);
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmRemovePerson(): Promise<void> {
+    if (!pendingDelete) {
+      return;
+    }
+
+    const user = pendingDelete;
+    const label = user.display_name ?? user.email;
+    setBusy(true);
+    setError(null);
+
+    try {
+      await deleteUser(user.id);
+      if (editing?.user.id === user.id) {
+        setEditing(null);
+      }
+      setPendingDelete(null);
+      setUsers((current) => current.filter((item) => item.id !== user.id));
+      setNotice(`${label} was deleted.`);
+      await load(true);
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError));
     } finally {
       setBusy(false);
     }
@@ -340,28 +414,33 @@ export function AdminPeoplePage() {
     const createdKind = addKind;
 
     setBusy(true);
-    setError(null);
+    setDialogError(null);
     setNotice(null);
 
     try {
       if (createdKind === "PATIENT") {
         await createPatient(patient);
+      } else if (createdKind === "ADMIN") {
+        await createAdmin(adminAccount);
       } else {
         await createStaff(staff);
       }
 
       setAddOpen(false);
+      setDialogError(null);
       resetAddPersonForm();
 
       setNotice(
         createdKind === "PATIENT"
           ? "Patient account created successfully."
-          : "Clinical professional created successfully."
+          : createdKind === "ADMIN"
+            ? "Administrator account created successfully."
+            : "Clinical professional created successfully."
       );
 
       await load();
     } catch (saveError) {
-      setError(getErrorMessage(saveError));
+      setDialogError(getErrorMessage(saveError));
     } finally {
       setBusy(false);
     }
@@ -384,13 +463,13 @@ export function AdminPeoplePage() {
         </button>
       </section>
 
-      {notice && (
+      {notice && !addOpen && !editing && !pendingDelete && (
         <Notice kind="success" close={() => setNotice(null)}>
           {notice}
         </Notice>
       )}
 
-      {error && (
+      {error && !addOpen && !editing && !pendingDelete && (
         <Notice kind="error" close={() => setError(null)}>
           {error}
         </Notice>
@@ -442,7 +521,14 @@ export function AdminPeoplePage() {
         <>
           <section className="people-grid">
             {filteredUsers.map((user) => (
-              <PersonCard key={user.id} user={user} busy={busy} edit={() => void openEdit(user)} />
+              <PersonCard
+                key={user.id}
+                user={user}
+                busy={busy}
+                canDelete={user.id !== currentUser?.id}
+                edit={() => void openEdit(user)}
+                remove={() => void requestRemovePerson(user)}
+              />
             ))}
           </section>
 
@@ -456,10 +542,16 @@ export function AdminPeoplePage() {
         <Modal
           title="Add person"
           eyebrow="PERSON DIRECTORY"
-          note="Create a patient or clinical professional with the correct profile."
+          note="Create a patient, clinical professional, or administrator with the correct profile."
           close={closeAddPersonDialog}
         >
-          <form onSubmit={addPerson}>
+          <form onSubmit={addPerson} onKeyDown={submitFormOnEnter}>
+            {dialogError ? (
+              <div className="people-modal-error" role="alert">
+                <AlertCircle size={16} />
+                <span>{dialogError}</span>
+              </div>
+            ) : null}
             <div className="kind-switch">
               <button
                 type="button"
@@ -478,10 +570,21 @@ export function AdminPeoplePage() {
                 <ClipboardPlus />
                 Clinical professional
               </button>
+
+              <button
+                type="button"
+                className={addKind === "ADMIN" ? "active" : ""}
+                onClick={() => setAddKind("ADMIN")}
+              >
+                <Shield />
+                Administrator
+              </button>
             </div>
 
             {addKind === "PATIENT" ? (
               <PatientFields value={patient} change={setPatient} showPassword />
+            ) : addKind === "ADMIN" ? (
+              <AdminFields value={adminAccount} change={setAdminAccount} />
             ) : (
               <StaffFields
                 value={staff}
@@ -503,7 +606,13 @@ export function AdminPeoplePage() {
           note={`${editing.user.display_name ?? editing.user.email} · ${editing.user.role_name}`}
           close={closeEditDialog}
         >
-          <form onSubmit={saveProfile}>
+          <form onSubmit={saveProfile} onKeyDown={submitFormOnEnter}>
+            {dialogError ? (
+              <div className="people-modal-error" role="alert">
+                <AlertCircle size={16} />
+                <span>{dialogError}</span>
+              </div>
+            ) : null}
             <ProfileFields
               value={editing.profile}
               change={(profile) =>
@@ -519,6 +628,18 @@ export function AdminPeoplePage() {
           </form>
         </Modal>
       )}
+
+      {pendingDelete && (
+        <ConfirmDialog
+          title="Confirm deletion"
+          message={`Are you sure you want to delete ${pendingDelete.display_name ?? pendingDelete.email}?`}
+          confirmLabel="Delete"
+          tone="danger"
+          busy={busy}
+          onCancel={() => !busy && setPendingDelete(null)}
+          onConfirm={() => void confirmRemovePerson()}
+        />
+      )}
     </div>
   );
 }
@@ -526,10 +647,12 @@ export function AdminPeoplePage() {
 interface PersonCardProps {
   user: AdminUser;
   busy: boolean;
+  canDelete: boolean;
   edit: () => void;
+  remove: () => void;
 }
 
-function PersonCard({ user, busy, edit }: PersonCardProps) {
+function PersonCard({ user, busy, canDelete, edit, remove }: PersonCardProps) {
   const name = user.display_name ?? "Unnamed account";
 
   const avatarText = (user.display_name ?? user.email).charAt(0).toUpperCase();
@@ -593,6 +716,12 @@ function PersonCard({ user, busy, edit }: PersonCardProps) {
           <Pencil size={15} />
           Edit profile
         </button>
+        {canDelete && (
+          <button type="button" className="danger" onClick={remove} disabled={busy}>
+            <Trash2 size={15} />
+            Delete
+          </button>
+        )}
       </footer>
     </article>
   );
@@ -878,6 +1007,10 @@ interface StaffFieldsProps {
 function StaffFields({ value, change, organizations, showPassword = false }: StaffFieldsProps) {
   return (
     <div className="people-form-grid">
+      <p className="people-form-note">
+        If this person already has an account, edit their profile instead. Email addresses must be
+        unique.
+      </p>
       <Field
         label="First name"
         value={value.firstName}
@@ -1011,6 +1144,46 @@ function StaffFields({ value, change, organizations, showPassword = false }: Sta
   );
 }
 
+interface AdminFieldsProps {
+  value: AdminInput;
+  change: (value: AdminInput) => void;
+}
+
+function AdminFields({ value, change }: AdminFieldsProps) {
+  return (
+    <div className="people-form-grid">
+      <p className="people-form-note">
+        Administrators manage people, access, clinics, and reports. They do not treat patients or
+        dispense medicines.
+      </p>
+      <Field
+        label="First name"
+        value={value.firstName}
+        set={(firstName) => change({ ...value, firstName })}
+      />
+      <Field
+        label="Last name"
+        value={value.lastName}
+        set={(lastName) => change({ ...value, lastName })}
+      />
+      <Field
+        label="Email"
+        type="email"
+        value={value.email}
+        set={(email) => change({ ...value, email })}
+      />
+      <Field
+        label="Temporary password"
+        type="password"
+        value={value.password}
+        minLength={12}
+        autoComplete="new-password"
+        set={(password) => change({ ...value, password })}
+      />
+    </div>
+  );
+}
+
 interface ProfileFieldsProps {
   value: UpdateUserProfileInput;
   change: (value: UpdateUserProfileInput) => void;
@@ -1124,27 +1297,10 @@ function ProfileFields({ value, change, organizations }: ProfileFieldsProps) {
         }
       />
 
-      <Select
-        label="Professional role"
-        value={value.role}
-        options={[
-          {
-            value: "DOCTOR",
-            label: "Doctor"
-          },
-          {
-            value: "PHARMACIST",
-            label: "Pharmacist"
-          }
-        ]}
-        set={(role) =>
-          change({
-            ...value,
-            role: role as "DOCTOR" | "PHARMACIST",
-            organizationId: 0
-          })
-        }
-      />
+      <label className="people-field">
+        Professional role
+        <input value={value.role === "DOCTOR" ? "Doctor" : "Pharmacist"} readOnly />
+      </label>
 
       <Field
         label="Licence number"

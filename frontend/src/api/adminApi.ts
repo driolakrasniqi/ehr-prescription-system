@@ -200,8 +200,26 @@ export async function updateStatus(userId: number, status: "PENDING" | "ACTIVE" 
 export async function unlockUser(userId: number) {
   await apiClient.post(`/admin/users/${userId}/unlock`);
 }
+export async function resetUserPassword(
+  userId: number,
+  input: { newPassword: string; confirmPassword: string }
+) {
+  await apiClient.post(`/admin/users/${userId}/reset-password`, input);
+}
 export async function createStaff(input: StaffInput) {
   const response = await apiClient.post<ApiSuccess<{ userId: number }>>("/admin/staff", input);
+  return response.data.data.userId;
+}
+
+export interface AdminInput {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+export async function createAdmin(input: AdminInput) {
+  const response = await apiClient.post<ApiSuccess<{ userId: number }>>("/admin/admins", input);
   return response.data.data.userId;
 }
 export async function createPatient(input: PatientInput) {
@@ -268,5 +286,94 @@ export async function updateUserProfile(
     `/admin/users/${userId}/profile`,
     input
   );
+  return response.data.data;
+}
+
+export async function deleteUser(userId: number): Promise<void> {
+  await apiClient.delete(`/admin/users/${userId}`);
+}
+
+export async function deleteOrganization(organizationId: number): Promise<void> {
+  await apiClient.delete(`/admin/organizations/${organizationId}`);
+}
+
+export interface DeletionCheck {
+  canDelete: boolean;
+  reason: string | null;
+}
+
+export async function checkOrganizationDeletion(organizationId: number): Promise<DeletionCheck> {
+  const response = await apiClient.get<ApiSuccess<DeletionCheck>>(
+    `/admin/organizations/${organizationId}/deletion`
+  );
+  return response.data.data;
+}
+
+export async function checkUserDeletion(userId: number): Promise<DeletionCheck> {
+  const response = await apiClient.get<ApiSuccess<DeletionCheck>>(
+    `/admin/users/${userId}/deletion`
+  );
+  return response.data.data;
+}
+
+export interface ActivityEvent {
+  id: number;
+  action: string;
+  category: "ACCOUNT" | "CLINICAL";
+  entityType: string;
+  entityId: number | null;
+  eventAt: string;
+  actorUserId: number | null;
+  actorName: string;
+  actorEmail: string | null;
+  actorRole: string | null;
+  targetName: string;
+  recordKind: string;
+  summary: string;
+}
+
+export interface LatestPersonUpdate {
+  entityId: number;
+  personName: string;
+  lastUpdatedAt: string;
+  updatedBy: string;
+  updatedByEmail: string | null;
+  change: string;
+}
+
+export interface LatestDoctorUpdate {
+  actorUserId: number;
+  doctorName: string;
+  doctorEmail: string | null;
+  patientName: string;
+  lastUpdatedAt: string;
+  change: string;
+}
+
+export async function getActivity(search = "") {
+  const response = await apiClient.get<
+    ApiSuccess<{
+      events: ActivityEvent[];
+      latestByPerson: LatestPersonUpdate[];
+      latestByDoctor: LatestDoctorUpdate[];
+    }>
+  >("/admin/activity", { params: search ? { search } : undefined });
+  return response.data.data;
+}
+
+export interface AdminOverview {
+  stats: {
+    doctors: number;
+    pharmacists: number;
+    patients: number;
+    admins: number;
+    clinics: number;
+    pharmacies: number;
+  };
+  recentActivity: ActivityEvent[];
+}
+
+export async function getAdminOverview(): Promise<AdminOverview> {
+  const response = await apiClient.get<ApiSuccess<AdminOverview>>("/admin/overview");
   return response.data.data;
 }

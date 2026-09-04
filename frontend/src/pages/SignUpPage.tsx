@@ -219,9 +219,9 @@ export function SignUpPage() {
             </div>
 
             <div>
-              <strong>EHR &amp; E-Prescription</strong>
+              <strong>Cliniq</strong>
 
-              <span>Healthcare Management System</span>
+              <span>Care, clearly connected</span>
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export function SignUpPage() {
               Secure patient access
             </span>
 
-            <h1>Your health record, accessible when you need it.</h1>
+            <h1 className="display-font">Your health record, ready when you need it.</h1>
 
             <p>
               Create your patient account to securely access your medical information, prescriptions
@@ -259,7 +259,7 @@ export function SignUpPage() {
           <div className="signup-heading">
             <span>PATIENT REGISTRATION</span>
 
-            <h2>Create your account</h2>
+            <h2 className="display-font">Create your account</h2>
 
             <p>Enter your information to create secure access to the patient portal.</p>
           </div>

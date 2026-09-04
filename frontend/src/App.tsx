@@ -4,14 +4,19 @@ import { ProtectedRoute } from "./auth/ProtectedRoute";
 import { RoleRoute } from "./auth/RoleRoute";
 import { AppShell } from "./components/layout/AppShell";
 import { AdminAccessPage } from "./pages/admin/AdminAccessPage";
+import { AdminActivityPage } from "./pages/admin/AdminActivityPage";
 import { AdminOrganizationsPage } from "./pages/admin/AdminOrganizationsPage";
 import { AdminPeoplePage } from "./pages/admin/AdminPeoplePage";
+import { AdminReportsPage } from "./pages/admin/AdminReportsPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { PatientDashboardPage } from "./pages/patient/PatientDashboardPage";
 import { PatientProfilePage } from "./pages/patient/PatientProfilePage";
 import { DoctorPatientsPage } from "./pages/doctor/DoctorPatientsPage";
+import { DoctorVisitsPage } from "./pages/doctor/DoctorVisitsPage";
+import { PharmacistPatientsPage } from "./pages/pharmacist/PharmacistPatientsPage";
+import { PatientPrescriptionsPage } from "./pages/patient/PatientPrescriptionsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignUpPage } from "./pages/SignUpPage";
 import "./App.css";
@@ -21,6 +26,10 @@ function HomePage() {
 
   if (!user) {
     return null;
+  }
+
+  if (user.role === "PATIENT") {
+    return <Navigate to="/patient" replace />;
   }
 
   return <DashboardPage />;
@@ -47,6 +56,8 @@ export default function App() {
 
             <Route path="patient/profile" element={<PatientProfilePage />} />
 
+            <Route path="patient/prescriptions" element={<PatientPrescriptionsPage />} />
+
             <Route path="patient/dashboard" element={<Navigate to="/patient" replace />} />
           </Route>
 
@@ -58,6 +69,10 @@ export default function App() {
 
             <Route path="admin/organizations" element={<AdminOrganizationsPage />} />
 
+            <Route path="admin/activity" element={<AdminActivityPage />} />
+
+            <Route path="admin/reports" element={<AdminReportsPage />} />
+
             <Route path="admin/users" element={<Navigate to="/admin/access" replace />} />
 
             <Route path="admin/roles" element={<Navigate to="/admin/access" replace />} />
@@ -68,6 +83,16 @@ export default function App() {
           {/* Doctor-only workspace */}
           <Route element={<RoleRoute allowedRoles={["DOCTOR"]} />}>
             <Route path="doctor/patients" element={<DoctorPatientsPage />} />
+            <Route path="doctor/visits" element={<DoctorVisitsPage />} />
+          </Route>
+
+          {/* Pharmacist-only workspace */}
+          <Route element={<RoleRoute allowedRoles={["PHARMACIST"]} />}>
+            <Route path="pharmacist/patients" element={<PharmacistPatientsPage />} />
+            <Route
+              path="pharmacist/prescriptions"
+              element={<Navigate to="/pharmacist/patients" replace />}
+            />
           </Route>
 
           {/* Unknown authenticated URLs */}

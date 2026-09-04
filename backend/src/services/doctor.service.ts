@@ -7,7 +7,11 @@ import type {
   CreateAllergyInput,
   CreateConditionInput,
   CreateEncounterInput,
-  CreatePrescriptionInput
+  CreatePrescriptionInput,
+  UpdateAllergyInput,
+  UpdateConditionInput,
+  UpdateEncounterInput,
+  UpdatePrescriptionInput
 } from "../validators/doctor.validator.js";
 
 async function requireDoctor(
@@ -56,7 +60,10 @@ function recordNumber(prefix: string): string {
 
 export async function getWorkspace(userId: number) {
   const contexts = await requireDoctor(userId);
-  const medications = await repository.listActiveMedications();
+  const [medications, therapies] = await Promise.all([
+    repository.listActiveMedications(),
+    repository.listDoctorTherapies(contexts[0].practitionerId)
+  ]);
   return {
     doctor: {
       practitionerId: contexts[0].practitionerId,
@@ -67,13 +74,37 @@ export async function getWorkspace(userId: number) {
       id: organizationId,
       name: organizationName
     })),
-    medications
+    medications,
+    therapies
+  };
+}
+
+export async function getOverview(userId: number) {
+  const contexts = await requireDoctor(userId);
+  const doctor = contexts[0];
+  const overview = await repository.getDoctorOverview(doctor.practitionerId);
+  return {
+    profile: {
+      firstName: doctor.firstName,
+      lastName: doctor.lastName,
+      licenseNumber: doctor.licenseNumber,
+      specialty: doctor.specialty,
+      phone: doctor.phone,
+      practitionerNumber: doctor.practitionerNumber,
+      clinics: contexts.map((item) => item.organizationName)
+    },
+    ...overview
   };
 }
 
 export async function listPatients(userId: number, search: string) {
   await requireDoctor(userId);
   return repository.listPatients(search);
+}
+
+export async function listVisits(userId: number) {
+  const contexts = await requireDoctor(userId);
+  return repository.listDoctorVisits(contexts[0].practitionerId);
 }
 
 export async function getPatient(userId: number, patientId: number) {
@@ -174,4 +205,197 @@ export async function createPrescription(
     metadata: { patientId: input.patientId, itemCount: input.items.length }
   });
   return prescriptionId;
+}
+
+function denyUnlessOwner(ownerDoctorId: number, currentDoctorId: number): void {
+  if (ownerDoctorId !== currentDoctorId) {
+    throw new AppError(403, "FORBIDDEN", "You can only change records that you created.");
+  }
+}
+
+async function requireOwnedEncounter(encounterId: number, doctorId: number) {
+  const record = await repository.findEncounterOwner(encounterId);
+  if (!record) throw new AppError(404, "NOT_FOUND", "Encounter not found.");
+  denyUnlessOwner(record.doctorId, doctorId);
+  return record;
+}
+
+async function requireOwnedCondition(conditionId: number, doctorId: number) {
+  const record = await repository.findConditionOwner(conditionId);
+  if (!record) throw new AppError(404, "NOT_FOUND", "Condition not found.");
+  denyUnlessOwner(record.doctorId, doctorId);
+  return record;
+}
+
+async function requireOwnedAllergy(allergyId: number, doctorId: number) {
+  const record = await repository.findAllergyOwner(allergyId);
+  if (!record) throw new AppError(404, "NOT_FOUND", "Allergy not found.");
+  denyUnlessOwner(record.doctorId, doctorId);
+  return record;
+}
+
+async function requireOwnedPrescription(prescriptionId: number, doctorId: number) {
+  const record = await repository.findPrescriptionOwner(prescriptionId);
+  if (!record) throw new AppError(404, "NOT_FOUND", "Prescription not found.");
+  denyUnlessOwner(record.doctorId, doctorId);
+  return record;
+}
+
+export async function updateEncounter(
+  userId: number,
+  encounterId: number,
+  input: UpdateEncounterInput,
+  meta: RequestMeta
+) {
+  const contexts = await requireDoctor(userId);
+  const doctorId = contexts[0].practitionerId;
+  const record = await requireOwnedEncounter(encounterId, doctorId);
+  requireOrganization(contexts, input.organizationId);
+  await repository.updateEncounter(encounterId, input);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "ENCOUNTER_UPDATED",
+    entityType: "ENCOUNTER",
+    entityId: encounterId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
+}
+
+export async function deleteEncounter(userId: number, encounterId: number, meta: RequestMeta) {
+  const contexts = await requireDoctor(userId);
+  const record = await requireOwnedEncounter(encounterId, contexts[0].practitionerId);
+  await repository.deleteEncounter(encounterId);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "ENCOUNTER_DELETED",
+    entityType: "ENCOUNTER",
+    entityId: encounterId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
+}
+
+export async function updateCondition(
+  userId: number,
+  conditionId: number,
+  input: UpdateConditionInput,
+  meta: RequestMeta
+) {
+  const contexts = await requireDoctor(userId);
+  const doctorId = contexts[0].practitionerId;
+  const record = await requireOwnedCondition(conditionId, doctorId);
+  await requirePatient(record.patientId);
+  await validateEncounter(input.encounterId, record.patientId, doctorId);
+  await repository.updateCondition(conditionId, input);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "CONDITION_UPDATED",
+    entityType: "CONDITION",
+    entityId: conditionId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
+}
+
+export async function deleteCondition(userId: number, conditionId: number, meta: RequestMeta) {
+  const contexts = await requireDoctor(userId);
+  const record = await requireOwnedCondition(conditionId, contexts[0].practitionerId);
+  await repository.deleteCondition(conditionId);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "CONDITION_DELETED",
+    entityType: "CONDITION",
+    entityId: conditionId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
+}
+
+export async function updateAllergy(
+  userId: number,
+  allergyId: number,
+  input: UpdateAllergyInput,
+  meta: RequestMeta
+) {
+  const contexts = await requireDoctor(userId);
+  const doctorId = contexts[0].practitionerId;
+  const record = await requireOwnedAllergy(allergyId, doctorId);
+  await requirePatient(record.patientId);
+  await validateEncounter(input.encounterId, record.patientId, doctorId);
+  await repository.updateAllergy(allergyId, input);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "ALLERGY_UPDATED",
+    entityType: "ALLERGY",
+    entityId: allergyId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
+}
+
+export async function deleteAllergy(userId: number, allergyId: number, meta: RequestMeta) {
+  const contexts = await requireDoctor(userId);
+  const record = await requireOwnedAllergy(allergyId, contexts[0].practitionerId);
+  await repository.deleteAllergy(allergyId);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "ALLERGY_DELETED",
+    entityType: "ALLERGY",
+    entityId: allergyId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
+}
+
+export async function updatePrescription(
+  userId: number,
+  prescriptionId: number,
+  input: UpdatePrescriptionInput,
+  meta: RequestMeta
+) {
+  const contexts = await requireDoctor(userId);
+  const context = requireOrganization(contexts, input.organizationId);
+  const record = await requireOwnedPrescription(prescriptionId, context.practitionerId);
+  await requirePatient(record.patientId);
+  await validateEncounter(input.encounterId, record.patientId, context.practitionerId);
+  await repository.updatePrescription(prescriptionId, input);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "PRESCRIPTION_UPDATED",
+    entityType: "PRESCRIPTION",
+    entityId: prescriptionId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId, itemCount: input.items.length }
+  });
+}
+
+export async function deletePrescription(userId: number, prescriptionId: number, meta: RequestMeta) {
+  const contexts = await requireDoctor(userId);
+  const record = await requireOwnedPrescription(prescriptionId, contexts[0].practitionerId);
+  await repository.deletePrescription(prescriptionId);
+  await writeAuditEvent({
+    actorUserId: userId,
+    actorRoleCode: "DOCTOR",
+    action: "PRESCRIPTION_DELETED",
+    entityType: "PRESCRIPTION",
+    entityId: prescriptionId,
+    result: "SUCCESS",
+    ...meta,
+    metadata: { patientId: record.patientId }
+  });
 }

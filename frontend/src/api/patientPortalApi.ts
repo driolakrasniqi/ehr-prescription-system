@@ -55,7 +55,6 @@ export interface PatientDashboardData {
   };
   summary: {
     activePrescriptions: number;
-    upcomingAppointments: number;
     activeAllergies: number;
     activeConditions: number;
   };
@@ -68,6 +67,7 @@ export interface PatientDashboardData {
     doctorName: string;
     organizationName: string;
     clinicalReason: string | null;
+    notesToPharmacist: string | null;
     items: Array<{
       id: number;
       medicationName: string;
@@ -92,17 +92,6 @@ export interface PatientDashboardData {
     examinationFindings: string | null;
     assessmentSummary: string | null;
     planSummary: string | null;
-  }>;
-  upcomingAppointments: Array<{
-    id: number;
-    appointmentNumber: string;
-    scheduledStart: string;
-    scheduledEnd: string;
-    appointmentType: string;
-    status: string;
-    reason: string | null;
-    practitionerName: string;
-    organizationName: string;
   }>;
   activeAllergies: Array<{
     id: number;

@@ -300,6 +300,74 @@ test("duplicate staff identity is rejected without creating another user", async
   assert.equal(Number(rows[0].total), 1);
 });
 
+test("professional roles cannot be converted on the same account", async () => {
+  const marker = "convert-role";
+  const created = await createStaff("PHARMACIST", marker);
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const userId = Number(created.body.data.userId);
+  const email = `${marker}.${runId}@example.com`;
+  const markerCode = Array.from(marker)
+    .reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0)
+    .toString(36)
+    .toUpperCase();
+  const licenseNumber = `LIC-${markerCode}-${runId.slice(-12)}`;
+
+  const duplicateDoctor = await request("/api/v1/admin/staff", {
+    method: "POST",
+    token: adminToken,
+    body: {
+      email,
+      password: "StaffPassword123!",
+      firstName: "Pharmacist",
+      lastName: "Integration",
+      role: "DOCTOR",
+      licenseNumber: `NEW-${runId.slice(-10)}`,
+      organizationId: clinicOrganizationId
+    }
+  });
+  assert.equal(duplicateDoctor.status, 409, JSON.stringify(duplicateDoctor.body));
+  assert.equal(duplicateDoctor.body.error.code, "CONFLICT");
+
+  const directRole = await request(`/api/v1/admin/users/${userId}/role`, {
+    method: "PATCH",
+    token: adminToken,
+    body: { role: "DOCTOR" }
+  });
+  assert.equal(directRole.status, 409, JSON.stringify(directRole.body));
+  assert.equal(directRole.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
+
+  const converted = await request(`/api/v1/admin/users/${userId}/profile`, {
+    method: "PATCH",
+    token: adminToken,
+    body: {
+      profileType: "PRACTITIONER",
+      role: "DOCTOR",
+      email,
+      firstName: "Pharmacist",
+      lastName: "Integration",
+      licenseNumber,
+      specialty: "General Medicine",
+      organizationId: clinicOrganizationId,
+      positionTitle: "Doctor"
+    }
+  });
+  assert.equal(converted.status, 409, JSON.stringify(converted.body));
+  assert.equal(converted.body.error.code, "ROLE_TRANSITION_REQUIRES_PROFILE_WORKFLOW");
+
+  const [rows] = await databasePool.query<any[]>(
+    `SELECT r.code AS role_code, po.professional_role
+       FROM users u
+       JOIN roles r ON r.id = u.role_id
+       JOIN practitioners p ON p.user_id = u.id
+       JOIN practitioner_organizations po ON po.practitioner_id = p.id
+      WHERE u.id = ? AND po.status = 'ACTIVE' AND po.is_primary = TRUE`,
+    [userId]
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].role_code, "PHARMACIST");
+  assert.equal(rows[0].professional_role, "PHARMACIST");
+});
+
 test("staff transaction rolls back when the organization is invalid", async () => {
   const targetEmail = `rollback-staff.${runId}@example.com`;
   const result = await request("/api/v1/admin/staff", {
@@ -324,7 +392,29 @@ test("staff transaction rolls back when the organization is invalid", async () =
   assert.equal(Number(rows[0].total), 0);
 });
 
-test("doctor and pharmacist cannot access admin routes", async () => {
+test("administrator can create another administrator account", async () => {
+  const email = `new-admin.${runId}@example.com`;
+  const created = await request("/api/v1/admin/admins", {
+    method: "POST",
+    token: adminToken,
+    body: {
+      email,
+      password: "AdminCreated123!",
+      firstName: "Second",
+      lastName: "Administrator"
+    }
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+
+  const [rows] = await databasePool.query<any[]>(
+    `SELECT u.email, r.code AS role_code
+       FROM users u JOIN roles r ON r.id = u.role_id
+      WHERE u.email = ?`,
+    [email]
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].role_code, "ADMIN");
+});
   const doctorCreated = await createStaff("DOCTOR", "doctor-forbidden");
   const pharmacistCreated = await createStaff("PHARMACIST", "pharmacist-forbidden");
 
@@ -585,6 +675,48 @@ test("unlock succeeds only for a LOCKED account", async () => {
       .status,
     409
   );
+});
+
+test("administrator can reset another user's password", async () => {
+  const targetEmail = `reset-password.${runId}@example.com`;
+  const nextPassword = "ResetPassword123!";
+  await request("/api/v1/auth/register", {
+    method: "POST",
+    body: {
+      firstName: "Reset",
+      lastName: "Target",
+      dateOfBirth: "1990-01-01",
+      sex: "FEMALE",
+      email: targetEmail,
+      password: patientPassword,
+      confirmPassword: patientPassword
+    }
+  });
+  const session = await login(targetEmail, patientPassword);
+  const [rows] = await databasePool.query<any[]>("SELECT id FROM users WHERE email = ?", [
+    targetEmail
+  ]);
+  const userId = Number(rows[0].id);
+
+  const selfReset = await request(`/api/v1/admin/users/${adminId}/reset-password`, {
+    method: "POST",
+    token: adminToken,
+    body: { newPassword: nextPassword, confirmPassword: nextPassword }
+  });
+  assert.equal(selfReset.status, 403);
+
+  const reset = await request(`/api/v1/admin/users/${userId}/reset-password`, {
+    method: "POST",
+    token: adminToken,
+    body: { newPassword: nextPassword, confirmPassword: nextPassword }
+  });
+  assert.equal(reset.status, 200, JSON.stringify(reset.body));
+
+  assert.equal((await request("/api/v1/auth/me", { token: session.body.data.accessToken })).status, 401);
+  assert.equal((await login(targetEmail, patientPassword)).status, 401);
+
+  const renewed = await login(targetEmail, nextPassword);
+  assert.equal(renewed.status, 200, JSON.stringify(renewed.body));
 });
 
 test("administrator creates a complete patient account", async () => {

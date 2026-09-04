@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { changePasswordRequest, getApiErrorMessage, logoutAllRequest } from "../auth/authApi";
 import { useAuth } from "../auth/AuthContext";
 import { setAccessToken } from "../auth/tokenStore";
+import { submitFormOnEnter } from "../utils/formEnterSubmit";
 import "./SettingsPage.css";
 
 export function SettingsPage() {
@@ -64,51 +65,6 @@ export function SettingsPage() {
         </div>
       )}
       <div className="settings-grid">
-        <section className="settings-card">
-          <header>
-            <span>
-              <KeyRound />
-            </span>
-            <div>
-              <h3>Change password</h3>
-              <p>This signs you out everywhere after the change.</p>
-            </div>
-          </header>
-          <form onSubmit={change}>
-            <label>
-              Current password
-              <input
-                type="password"
-                value={form.currentPassword}
-                onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
-                required
-              />
-            </label>
-            <label>
-              New password
-              <input
-                type="password"
-                minLength={12}
-                value={form.newPassword}
-                onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
-                required
-              />
-              <small>Use at least 12 characters.</small>
-            </label>
-            <label>
-              Confirm new password
-              <input
-                type="password"
-                value={form.confirmPassword}
-                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-                required
-              />
-            </label>
-            <button disabled={busy}>
-              {busy ? <LoaderCircle className="spin" /> : <ShieldCheck />} Update password
-            </button>
-          </form>
-        </section>
         <section className="settings-card settings-card--account">
           <header>
             <span>
@@ -146,6 +102,51 @@ export function SettingsPage() {
               <LogOut /> Log out everywhere
             </button>
           </div>
+        </section>
+        <section className="settings-card">
+          <header>
+            <span>
+              <KeyRound />
+            </span>
+            <div>
+              <h3>Change password</h3>
+              <p>This signs you out everywhere after the change.</p>
+            </div>
+          </header>
+          <form onSubmit={change} onKeyDown={submitFormOnEnter}>
+            <label>
+              Current password
+              <input
+                type="password"
+                value={form.currentPassword}
+                onChange={(e) => setForm({ ...form, currentPassword: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              New password
+              <input
+                type="password"
+                minLength={12}
+                value={form.newPassword}
+                onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+                required
+              />
+              <small>Use at least 12 characters.</small>
+            </label>
+            <label>
+              Confirm new password
+              <input
+                type="password"
+                value={form.confirmPassword}
+                onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                required
+              />
+            </label>
+            <button type="submit" disabled={busy}>
+              {busy ? <LoaderCircle className="spin" /> : <ShieldCheck />} Update password
+            </button>
+          </form>
         </section>
       </div>
     </div>
